@@ -37,11 +37,13 @@ export type Database = {
           association_id: string | null
           created_at: string
           created_by: string | null
+          custom_association_name: string | null
           description: string | null
           event_date: string
           id: string
           image_url: string | null
           is_published: boolean | null
+          photo_link: string | null
           price: number | null
           publish_at: string | null
           ticket_link: string | null
@@ -52,11 +54,13 @@ export type Database = {
           association_id?: string | null
           created_at?: string
           created_by?: string | null
+          custom_association_name?: string | null
           description?: string | null
           event_date: string
           id?: string
           image_url?: string | null
           is_published?: boolean | null
+          photo_link?: string | null
           price?: number | null
           publish_at?: string | null
           ticket_link?: string | null
@@ -67,11 +71,13 @@ export type Database = {
           association_id?: string | null
           created_at?: string
           created_by?: string | null
+          custom_association_name?: string | null
           description?: string | null
           event_date?: string
           id?: string
           image_url?: string | null
           is_published?: boolean | null
+          photo_link?: string | null
           price?: number | null
           publish_at?: string | null
           ticket_link?: string | null

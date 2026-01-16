@@ -3,8 +3,8 @@ import { CalendarDays, Home, Info, PlayCircle, PartyPopper } from 'lucide-react'
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { path: '/events', icon: PartyPopper, label: 'Événements' },
   { path: '/calendar', icon: CalendarDays, label: 'Calendrier' },
+  { path: '/events', icon: PartyPopper, label: 'Événements' },
   { path: '/', icon: Home, label: 'Accueil' },
   { path: '/info', icon: Info, label: 'Infos' },
   { path: '/interviews', icon: PlayCircle, label: 'Interviews' },

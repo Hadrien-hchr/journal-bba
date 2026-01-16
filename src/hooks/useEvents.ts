@@ -8,10 +8,12 @@ export interface Event {
   title: string;
   description: string | null;
   association_id: string | null;
+  custom_association_name: string | null;
   image_url: string | null;
   event_date: string;
   price: number | null;
   ticket_link: string | null;
+  photo_link: string | null;
   is_published: boolean;
   publish_at: string | null;
   created_by: string | null;
@@ -24,12 +26,18 @@ export interface CreateEventData {
   title: string;
   description?: string;
   association_id?: string;
+  custom_association_name?: string;
   image_url?: string;
   event_date: string;
   price?: number;
   ticket_link?: string;
   is_published: boolean;
   publish_at?: string;
+}
+
+export interface UpdateEventData {
+  id: string;
+  photo_link?: string | null;
 }
 
 export function useEvents() {
@@ -108,6 +116,28 @@ export function useDeleteEvent() {
         .eq('id', eventId);
 
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+}
+
+export function useUpdateEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateEventData) => {
+      const { id, ...updateData } = data;
+      const { data: event, error } = await supabase
+        .from('events')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return event;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });

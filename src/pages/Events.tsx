@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents, useDeleteEvent, useUserSubscriptions, useCreateEvent, useUpdateEvent } from '@/hooks/useEvents';
 import { Button } from '@/components/ui/button';
@@ -8,16 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Plus, Trash2, Calendar, Euro, Ticket, Loader2, PartyPopper, Image, Link as LinkIcon } from 'lucide-react';
+import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, Image, CalendarDays, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-const ASSOCIATIONS = [
-  'Tous',
+const ASSOCIATIONS_LIST = [
   'BDE',
   'BDS',
   'BDA',
@@ -29,6 +28,8 @@ const ASSOCIATIONS = [
   "Em'look",
   "Mount'Em",
 ];
+
+const FILTER_ASSOCIATIONS = ['Tous', ...ASSOCIATIONS_LIST];
 
 export default function Events() {
   const { isAdmin, user } = useAuth();
@@ -42,11 +43,16 @@ export default function Events() {
   const [selectedAssociation, setSelectedAssociation] = useState('Tous');
   const [editingPhotoLink, setEditingPhotoLink] = useState<string | null>(null);
   const [photoLinkValue, setPhotoLinkValue] = useState('');
+  
+  // Multi-association input state
+  const [associationInput, setAssociationInput] = useState('');
+  const [selectedAssociations, setSelectedAssociations] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    custom_association_name: '',
     image_url: '',
     event_date: '',
     price: '',
@@ -66,14 +72,48 @@ export default function Events() {
     return isBefore(eventDateFrance, franceNow);
   };
 
+  // Suggestions based on input
+  const filteredSuggestions = useMemo(() => {
+    if (!associationInput.trim()) return [];
+    const input = associationInput.toLowerCase();
+    return ASSOCIATIONS_LIST.filter(
+      (assoc) => 
+        assoc.toLowerCase().includes(input) && 
+        !selectedAssociations.includes(assoc)
+    );
+  }, [associationInput, selectedAssociations]);
+
+  const handleAddAssociation = (assoc: string) => {
+    if (!selectedAssociations.includes(assoc)) {
+      setSelectedAssociations([...selectedAssociations, assoc]);
+    }
+    setAssociationInput('');
+    setShowSuggestions(false);
+    inputRef.current?.focus();
+  };
+
+  const handleRemoveAssociation = (assoc: string) => {
+    setSelectedAssociations(selectedAssociations.filter((a) => a !== assoc));
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && associationInput.trim()) {
+      e.preventDefault();
+      handleAddAssociation(associationInput.trim());
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      // Join multiple associations with comma
+      const associationsString = selectedAssociations.join(', ');
+      
       await createEvent.mutateAsync({
         title: formData.title,
         description: formData.description || undefined,
-        custom_association_name: formData.custom_association_name || undefined,
+        custom_association_name: associationsString || undefined,
         image_url: formData.image_url || undefined,
         event_date: new Date(formData.event_date).toISOString(),
         price: formData.price ? parseFloat(formData.price) : undefined,
@@ -87,7 +127,6 @@ export default function Events() {
       setFormData({
         title: '',
         description: '',
-        custom_association_name: '',
         image_url: '',
         event_date: '',
         price: '',
@@ -95,6 +134,8 @@ export default function Events() {
         is_published: true,
         publish_at: '',
       });
+      setSelectedAssociations([]);
+      setAssociationInput('');
     } catch (error) {
       toast.error('Erreur lors de la création de l\'événement');
     }
@@ -135,12 +176,41 @@ export default function Events() {
     }
   };
 
-  // Filter events by association
-  const filteredEvents = events?.filter((event) => {
-    if (selectedAssociation === 'Tous') return true;
-    const eventAssocName = event.custom_association_name || event.associations?.name;
-    return eventAssocName === selectedAssociation;
-  });
+  // Filter and sort events
+  const sortedAndFilteredEvents = useMemo(() => {
+    if (!events) return [];
+    
+    // Filter by association
+    const filtered = events.filter((event) => {
+      if (selectedAssociation === 'Tous') return true;
+      const eventAssocName = event.custom_association_name || event.associations?.name || '';
+      // Check if any of the associations match (comma-separated)
+      const assocList = eventAssocName.split(',').map((a) => a.trim());
+      return assocList.includes(selectedAssociation);
+    });
+    
+    const franceNow = getFranceTime();
+    
+    // Separate upcoming and past events
+    const upcoming = filtered.filter((event) => {
+      const eventDate = toZonedTime(new Date(event.event_date), 'Europe/Paris');
+      return !isBefore(eventDate, franceNow);
+    });
+    
+    const past = filtered.filter((event) => {
+      const eventDate = toZonedTime(new Date(event.event_date), 'Europe/Paris');
+      return isBefore(eventDate, franceNow);
+    });
+    
+    // Sort upcoming: soonest first
+    upcoming.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+    
+    // Sort past: most recent first
+    past.sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
+    
+    // Combine: upcoming first, then past
+    return [...upcoming, ...past];
+  }, [events, selectedAssociation]);
 
   if (isLoading) {
     return (
@@ -192,13 +262,57 @@ export default function Events() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="custom_association_name">Association (écriture libre)</Label>
-                  <Input
-                    id="custom_association_name"
-                    value={formData.custom_association_name}
-                    onChange={(e) => setFormData({ ...formData, custom_association_name: e.target.value })}
-                    placeholder="Ex: BDE, BDS, Ma nouvelle asso..."
-                  />
+                  <Label>Associations</Label>
+                  <div className="relative">
+                    {/* Selected associations as badges */}
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {selectedAssociations.map((assoc) => (
+                        <Badge key={assoc} variant="secondary" className="flex items-center gap-1">
+                          {assoc}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAssociation(assoc)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    {/* Input with autocomplete */}
+                    <Input
+                      ref={inputRef}
+                      value={associationInput}
+                      onChange={(e) => {
+                        setAssociationInput(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      onKeyDown={handleInputKeyDown}
+                      placeholder="Tapez une association et appuyez sur Entrée..."
+                    />
+                    
+                    {/* Suggestions dropdown */}
+                    {showSuggestions && filteredSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                        {filteredSuggestions.map((assoc) => (
+                          <button
+                            key={assoc}
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                            onClick={() => handleAddAssociation(assoc)}
+                          >
+                            {assoc}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Vous pouvez ajouter plusieurs associations
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
@@ -288,7 +402,7 @@ export default function Events() {
       {/* Association filter buttons */}
       <div className="overflow-x-auto pb-2 -mx-4 px-4">
         <div className="flex gap-2 min-w-max">
-          {ASSOCIATIONS.map((assoc) => (
+          {FILTER_ASSOCIATIONS.map((assoc) => (
             <Button
               key={assoc}
               variant={selectedAssociation === assoc ? 'default' : 'outline'}
@@ -305,7 +419,7 @@ export default function Events() {
         </div>
       </div>
 
-      {filteredEvents?.length === 0 ? (
+      {sortedAndFilteredEvents.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <PartyPopper className="h-12 w-12 text-muted-foreground mb-4" />
@@ -318,7 +432,7 @@ export default function Events() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredEvents?.map((event) => {
+          {sortedAndFilteredEvents.map((event) => {
             const isPast = isEventPast(event.event_date);
             const associationName = event.custom_association_name || event.associations?.name;
             
@@ -357,11 +471,21 @@ export default function Events() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <Checkbox
-                        checked={subscriptions.includes(event.id)}
-                        onCheckedChange={() => handleSubscriptionToggle(event.id)}
-                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleSubscriptionToggle(event.id)}
+                        className={cn(
+                          'h-8 w-8',
+                          subscriptions.includes(event.id) && 'text-primary'
+                        )}
+                        title={subscriptions.includes(event.id) ? 'Retirer du calendrier' : 'Ajouter au calendrier'}
+                      >
+                        <CalendarDays className={cn(
+                          'h-5 w-5',
+                          subscriptions.includes(event.id) && 'fill-current'
+                        )} />
+                      </Button>
                       {isAdmin && (
                         <Button
                           variant="ghost"
@@ -383,7 +507,7 @@ export default function Events() {
                   )}
                   <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4 text-primary" />
+                      <CalendarDays className="h-4 w-4 text-primary" />
                       {format(new Date(event.event_date), 'dd MMMM yyyy à HH:mm', { locale: fr })}
                     </div>
                     {event.price !== null && (

@@ -11,15 +11,12 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInAsAdmin: (email: string, password: string, accessKey: string) => Promise<{ error: Error | null }>;
+  signInAsAdmin: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Admin access key - in production, this should be stored securely
-const ADMIN_ACCESS_KEY = 'BBA-ADMIN-2024';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -104,11 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signInAsAdmin = async (email: string, password: string, accessKey: string) => {
-    if (accessKey !== ADMIN_ACCESS_KEY) {
-      return { error: new Error('Clé d\'accès administrateur invalide') };
-    }
-
+  const signInAsAdmin = async (email: string, password: string) => {
+    // Authenticate the user first
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -118,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: error as Error };
     }
 
-    // Check if user has admin role
+    // Check if user has admin role in the database (server-side validation)
     if (data.user) {
       const userRole = await fetchUserRole(data.user.id);
       if (userRole !== 'admin') {

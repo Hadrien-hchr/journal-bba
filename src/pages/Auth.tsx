@@ -26,7 +26,6 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [adminKey, setAdminKey] = useState('');
 
   useEffect(() => {
     if (user && !loading) {
@@ -93,13 +92,8 @@ export default function Auth() {
       }
     }
 
-    if (!adminKey.trim()) {
-      toast.error('La clé d\'accès est requise');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const { error } = await signInAsAdmin(email, password, adminKey);
+    // Admin authentication - role is validated server-side via database
+    const { error } = await signInAsAdmin(email, password);
     if (error) {
       toast.error(error.message);
     } else {
@@ -241,7 +235,7 @@ export default function Auth() {
                 Accès Administrateur
               </CardTitle>
               <CardDescription>
-                Connectez-vous avec vos identifiants et votre clé d'accès
+                Connectez-vous avec vos identifiants administrateur
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -277,18 +271,6 @@ export default function Auth() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="adminKey">Clé d'accès</Label>
-                  <Input
-                    id="adminKey"
-                    type="password"
-                    placeholder="Entrez la clé d'accès"
-                    value={adminKey}
-                    onChange={(e) => setAdminKey(e.target.value)}
-                    required
-                  />
                 </div>
 
                 <Button type="submit" className="w-full gradient-red shadow-red" disabled={isSubmitting}>

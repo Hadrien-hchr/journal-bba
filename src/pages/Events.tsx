@@ -12,9 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, Image, CalendarDays, X } from 'lucide-react';
+import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { FileUploadInput } from '@/components/FileUploadInput';
 
 const ASSOCIATIONS_LIST = [
   'BDE',
@@ -315,16 +316,12 @@ export default function Events() {
                   </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">URL de l'image</Label>
-                  <Input
-                    id="image_url"
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
+                <FileUploadInput
+                  label="Image de l'événement"
+                  value={formData.image_url}
+                  onChange={(url) => setFormData({ ...formData, image_url: url })}
+                  folder="events"
+                />
                 
                 <div className="space-y-2">
                   <Label htmlFor="event_date">Date de l'événement *</Label>
@@ -576,7 +573,7 @@ export default function Events() {
                                 setPhotoLinkValue(event.photo_link || '');
                               }}
                             >
-                              <Image className="h-4 w-4 mr-2" />
+                              <CalendarDays className="h-4 w-4 mr-2" />
                               {event.photo_link ? 'Modifier le lien photos' : 'Ajouter un lien photos'}
                             </Button>
                           )}
@@ -591,7 +588,7 @@ export default function Events() {
                           asChild
                         >
                           <a href={event.photo_link} target="_blank" rel="noopener noreferrer">
-                            <Image className="h-4 w-4 mr-2" />
+                            <CalendarDays className="h-4 w-4 mr-2" />
                             Voir les photos
                           </a>
                         </Button>

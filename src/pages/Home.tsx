@@ -1,67 +1,90 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useHomeContent, useCreateHomeContent, useDeleteHomeContent } from '@/hooks/useContent';
+import { useHomePosts, useCreateHomePost, useDeleteHomePost } from '@/hooks/useHomePosts';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Type, Image, Video, Loader2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Loader2, Sparkles, Clock, Play } from 'lucide-react';
 import { toast } from 'sonner';
+import { MultiFileUpload } from '@/components/MultiFileUpload';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function Home() {
   const { isAdmin } = useAuth();
-  const { content, isLoading } = useHomeContent();
-  const createContent = useCreateHomeContent();
-  const deleteContent = useDeleteHomeContent();
+  const { posts, isLoading } = useHomePosts();
+  const createPost = useCreateHomePost();
+  const deletePost = useDeleteHomePost();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [contentType, setContentType] = useState<'text' | 'image' | 'video'>('text');
-  const [contentValue, setContentValue] = useState('');
+  const [formData, setFormData] = useState({
+    title: '',
+    text_content: '',
+    media_urls: [] as string[],
+    video_urls: [] as string[],
+  });
+  const [videoUrlInput, setVideoUrlInput] = useState('');
+
+  // Convert YouTube URL to embed URL
+  const getEmbedUrl = (url: string) => {
+    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+    return url;
+  };
+
+  const handleAddVideoUrl = () => {
+    if (videoUrlInput.trim()) {
+      setFormData({
+        ...formData,
+        video_urls: [...formData.video_urls, videoUrlInput.trim()],
+      });
+      setVideoUrlInput('');
+    }
+  };
+
+  const handleRemoveVideoUrl = (index: number) => {
+    setFormData({
+      ...formData,
+      video_urls: formData.video_urls.filter((_, i) => i !== index),
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!contentValue.trim()) {
-      toast.error('Le contenu est requis');
+    if (!formData.title && !formData.text_content && formData.media_urls.length === 0 && formData.video_urls.length === 0) {
+      toast.error('Ajoutez du contenu à votre post');
       return;
     }
 
     try {
-      await createContent.mutateAsync({
-        content_type: contentType,
-        content: contentValue,
-        position_x: 0,
-        position_y: 0,
-        order_index: content.length,
+      await createPost.mutateAsync({
+        title: formData.title || undefined,
+        text_content: formData.text_content || undefined,
+        media_urls: formData.media_urls.length > 0 ? formData.media_urls : undefined,
+        video_urls: formData.video_urls.length > 0 ? formData.video_urls : undefined,
       });
       
-      toast.success('Contenu ajouté !');
+      toast.success('Post publié !');
       setIsDialogOpen(false);
-      setContentValue('');
-      setContentType('text');
+      setFormData({ title: '', text_content: '', media_urls: [], video_urls: [] });
+      setVideoUrlInput('');
     } catch (error) {
-      toast.error('Erreur lors de l\'ajout du contenu');
+      toast.error('Erreur lors de la publication');
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteContent.mutateAsync(id);
-      toast.success('Contenu supprimé');
+      await deletePost.mutateAsync(id);
+      toast.success('Post supprimé');
     } catch (error) {
       toast.error('Erreur lors de la suppression');
-    }
-  };
-
-  const getContentIcon = (type: string) => {
-    switch (type) {
-      case 'text': return <Type className="h-4 w-4" />;
-      case 'image': return <Image className="h-4 w-4" />;
-      case 'video': return <Video className="h-4 w-4" />;
-      default: return null;
     }
   };
 
@@ -86,73 +109,91 @@ export default function Home() {
             <DialogTrigger asChild>
               <Button className="gradient-red shadow-red">
                 <Plus className="h-4 w-4 mr-2" />
-                Ajouter
+                Nouveau post
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="font-display">Ajouter du contenu</DialogTitle>
+                <DialogTitle className="font-display">Nouveau post</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Type de contenu</Label>
-                  <Select value={contentType} onValueChange={(v) => setContentType(v as typeof contentType)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">
-                        <div className="flex items-center gap-2">
-                          <Type className="h-4 w-4" />
-                          Texte
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="image">
-                        <div className="flex items-center gap-2">
-                          <Image className="h-4 w-4" />
-                          Image
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="video">
-                        <div className="flex items-center gap-2">
-                          <Video className="h-4 w-4" />
-                          Vidéo
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="title">Titre (optionnel)</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Titre du post..."
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>
-                    {contentType === 'text' ? 'Texte' : 'URL'}
-                  </Label>
-                  {contentType === 'text' ? (
-                    <Textarea
-                      value={contentValue}
-                      onChange={(e) => setContentValue(e.target.value)}
-                      placeholder="Entrez votre texte..."
-                      rows={4}
-                    />
-                  ) : (
+                  <Label htmlFor="text_content">Texte (optionnel)</Label>
+                  <Textarea
+                    id="text_content"
+                    value={formData.text_content}
+                    onChange={(e) => setFormData({ ...formData, text_content: e.target.value })}
+                    placeholder="Rédigez votre texte..."
+                    rows={4}
+                  />
+                </div>
+
+                <MultiFileUpload
+                  label="Images (optionnel)"
+                  values={formData.media_urls}
+                  onChange={(urls) => setFormData({ ...formData, media_urls: urls })}
+                  folder="home"
+                  maxFiles={10}
+                />
+
+                <div className="space-y-2">
+                  <Label>Vidéos (optionnel)</Label>
+                  <div className="flex gap-2">
                     <Input
-                      type="url"
-                      value={contentValue}
-                      onChange={(e) => setContentValue(e.target.value)}
-                      placeholder="https://..."
+                      value={videoUrlInput}
+                      onChange={(e) => setVideoUrlInput(e.target.value)}
+                      placeholder="URL YouTube..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddVideoUrl();
+                        }
+                      }}
                     />
+                    <Button type="button" variant="outline" onClick={handleAddVideoUrl}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {formData.video_urls.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                      {formData.video_urls.map((url, index) => (
+                        <div key={index} className="flex items-center gap-2 bg-muted rounded-md p-2">
+                          <Play className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs truncate flex-1">{url}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 flex-shrink-0"
+                            onClick={() => handleRemoveVideoUrl(index)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
                 
                 <Button 
                   type="submit" 
                   className="w-full gradient-red shadow-red"
-                  disabled={createContent.isPending}
+                  disabled={createPost.isPending}
                 >
-                  {createContent.isPending ? (
+                  {createPost.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
-                  Ajouter
+                  Publier
                 </Button>
               </form>
             </DialogContent>
@@ -160,72 +201,79 @@ export default function Home() {
         )}
       </div>
 
-      {content.length === 0 ? (
+      {posts.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
               {isAdmin 
-                ? 'Ajoutez du contenu pour enrichir la page d\'accueil'
+                ? 'Créez votre premier post pour enrichir la page d\'accueil'
                 : 'Aucun contenu pour le moment'}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {content.map((item) => (
-            <Card key={item.id} className="overflow-hidden animate-scale-in shadow-soft">
-              <CardContent className="p-0">
-                {item.content_type === 'text' ? (
-                  <div className="p-4 relative">
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+          {posts.map((post) => (
+            <Card key={post.id} className="overflow-hidden animate-scale-in shadow-soft">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    {post.title && (
+                      <CardTitle className="text-lg font-display line-clamp-2">
+                        {post.title}
+                      </CardTitle>
                     )}
-                    <p className="whitespace-pre-wrap pr-10">{item.content}</p>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <Clock className="h-3 w-3" />
+                      {format(new Date(post.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                    </div>
                   </div>
-                ) : item.content_type === 'image' ? (
-                  <div className="relative">
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <img
-                      src={item.content}
-                      alt="Content"
-                      className="w-full h-auto"
-                    />
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="flex-shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(post.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                {post.text_content && (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                    {post.text_content}
+                  </p>
+                )}
+
+                {post.media_urls && post.media_urls.length > 0 && (
+                  <div className={`grid gap-2 ${post.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {post.media_urls.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`Image ${index + 1}`}
+                        className="w-full h-auto rounded-lg object-cover"
+                      />
+                    ))}
                   </div>
-                ) : (
-                  <div className="relative aspect-video">
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 z-10 bg-background/80 backdrop-blur-sm text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <iframe
-                      src={item.content}
-                      className="w-full h-full"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
+                )}
+
+                {post.video_urls && post.video_urls.length > 0 && (
+                  <div className="space-y-2">
+                    {post.video_urls.map((url, index) => (
+                      <div key={index} className="aspect-video w-full">
+                        <iframe
+                          src={getEmbedUrl(url)}
+                          className="w-full h-full rounded-lg"
+                          allowFullScreen
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        />
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>

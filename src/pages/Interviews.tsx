@@ -11,6 +11,7 @@ import { Plus, Trash2, Loader2, PlayCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { FileUploadInput } from '@/components/FileUploadInput';
 
 export default function Interviews() {
   const { isAdmin } = useAuth();
@@ -123,16 +124,12 @@ export default function Interviews() {
                   </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="thumbnailUrl">URL de la miniature (optionnel)</Label>
-                  <Input
-                    id="thumbnailUrl"
-                    type="url"
-                    value={formData.thumbnail_url}
-                    onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
+                <FileUploadInput
+                  label="Miniature (optionnel)"
+                  value={formData.thumbnail_url}
+                  onChange={(url) => setFormData({ ...formData, thumbnail_url: url })}
+                  folder="interviews"
+                />
                 
                 <div className="space-y-2">
                   <Label htmlFor="videoDescription">Description (optionnel)</Label>

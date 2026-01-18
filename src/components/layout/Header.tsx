@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { NotificationToggle } from '@/components/NotificationToggle';
 
 export default function Header() {
   const { user, isAdmin, signOut } = useAuth();
@@ -29,16 +30,19 @@ export default function Header() {
           )}
         </div>
         
-        {user && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          <NotificationToggle />
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );

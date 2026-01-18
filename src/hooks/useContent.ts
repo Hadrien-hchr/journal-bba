@@ -92,6 +92,7 @@ export interface Information {
   id: string;
   title: string | null;
   content: string;
+  image_url: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -138,7 +139,7 @@ export function useCreateInformation() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (data: { title?: string; content: string }) => {
+    mutationFn: async (data: { title?: string; content: string; image_url?: string }) => {
       const { data: info, error } = await supabase
         .from('information')
         .insert({ ...data, created_by: user?.id })

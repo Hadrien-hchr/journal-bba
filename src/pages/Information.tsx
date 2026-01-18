@@ -11,6 +11,7 @@ import { Plus, Trash2, Loader2, Info, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { FileUploadInput } from '@/components/FileUploadInput';
 
 export default function Information() {
   const { isAdmin } = useAuth();
@@ -21,6 +22,7 @@ export default function Information() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,12 +36,14 @@ export default function Information() {
       await createInfo.mutateAsync({
         title: title.trim() || undefined,
         content: content.trim(),
+        image_url: imageUrl || undefined,
       });
       
       toast.success('Information ajoutée !');
       setIsDialogOpen(false);
       setTitle('');
       setContent('');
+      setImageUrl('');
     } catch (error) {
       toast.error('Erreur lors de l\'ajout');
     }
@@ -78,7 +82,7 @@ export default function Information() {
                 Ajouter
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display">Nouvelle information</DialogTitle>
               </DialogHeader>
@@ -104,6 +108,13 @@ export default function Information() {
                     required
                   />
                 </div>
+
+                <FileUploadInput
+                  label="Image (optionnel)"
+                  value={imageUrl}
+                  onChange={setImageUrl}
+                  folder="information"
+                />
                 
                 <Button 
                   type="submit" 
@@ -131,7 +142,14 @@ export default function Information() {
       ) : (
         <div className="space-y-4">
           {information.map((info) => (
-            <Card key={info.id} className="animate-scale-in shadow-soft">
+            <Card key={info.id} className="animate-scale-in shadow-soft overflow-hidden">
+              {info.image_url && (
+                <img
+                  src={info.image_url}
+                  alt={info.title || 'Information'}
+                  className="w-full h-48 object-cover"
+                />
+              )}
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">

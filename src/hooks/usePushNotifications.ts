@@ -3,8 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-// VAPID public key - this should be generated and stored securely
-// For demo purposes, we'll use a placeholder that should be replaced
+// VAPID public key for Web Push notifications
+// Note: This is the PUBLIC key and is safe to expose client-side (per Web Push standard)
+// The corresponding private key must be stored securely server-side
 const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {

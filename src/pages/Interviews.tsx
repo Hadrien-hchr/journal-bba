@@ -27,13 +27,19 @@ export default function Interviews() {
     description: '',
   });
 
-  // Convert YouTube URL to embed URL
-  const getEmbedUrl = (url: string) => {
-    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+  // Convert YouTube URL to embed URL with strict validation
+  const getEmbedUrl = (url: string): string | null => {
+    // Strict YouTube URL validation - only allows valid YouTube video IDs (11 alphanumeric chars, dash, underscore)
+    const youtubeMatch = url.match(/^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$/);
     if (youtubeMatch) {
       return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
     }
-    return url;
+    return null; // Reject non-YouTube URLs for security
+  };
+
+  // Validate YouTube URL
+  const isValidYoutubeUrl = (url: string): boolean => {
+    return /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$/.test(url);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +47,11 @@ export default function Interviews() {
     
     if (!formData.title.trim() || !formData.video_url.trim()) {
       toast.error('Le titre et l\'URL sont requis');
+      return;
+    }
+
+    if (!isValidYoutubeUrl(formData.video_url.trim())) {
+      toast.error('URL YouTube invalide. Formats acceptés: youtube.com/watch?v=..., youtu.be/..., youtube.com/embed/...');
       return;
     }
 
@@ -169,14 +180,24 @@ export default function Interviews() {
         <div className="space-y-4">
           {interviews.map((interview) => (
             <Card key={interview.id} className="overflow-hidden animate-scale-in shadow-soft">
-              <div className="aspect-video w-full">
-                <iframe
-                  src={getEmbedUrl(interview.video_url)}
-                  className="w-full h-full"
-                  allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                />
-              </div>
+              {(() => {
+                const embedUrl = getEmbedUrl(interview.video_url);
+                return embedUrl ? (
+                  <div className="aspect-video w-full">
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      sandbox="allow-scripts allow-same-origin allow-presentation"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video w-full bg-muted flex items-center justify-center">
+                    <p className="text-muted-foreground text-sm">Vidéo non disponible</p>
+                  </div>
+                );
+              })()}
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">

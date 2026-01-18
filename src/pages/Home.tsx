@@ -28,23 +28,35 @@ export default function Home() {
   });
   const [videoUrlInput, setVideoUrlInput] = useState('');
 
-  // Convert YouTube URL to embed URL
-  const getEmbedUrl = (url: string) => {
-    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+  // Convert YouTube URL to embed URL with strict validation
+  const getEmbedUrl = (url: string): string | null => {
+    // Strict YouTube URL validation - only allows valid YouTube video IDs (11 alphanumeric chars, dash, underscore)
+    const youtubeMatch = url.match(/^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$/);
     if (youtubeMatch) {
       return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
     }
-    return url;
+    return null; // Reject non-YouTube URLs for security
+  };
+
+  // Validate YouTube URL before adding
+  const isValidYoutubeUrl = (url: string): boolean => {
+    return /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$/.test(url);
   };
 
   const handleAddVideoUrl = () => {
-    if (videoUrlInput.trim()) {
-      setFormData({
-        ...formData,
-        video_urls: [...formData.video_urls, videoUrlInput.trim()],
-      });
-      setVideoUrlInput('');
+    const trimmedUrl = videoUrlInput.trim();
+    if (!trimmedUrl) return;
+    
+    if (!isValidYoutubeUrl(trimmedUrl)) {
+      toast.error('URL YouTube invalide. Formats acceptés: youtube.com/watch?v=..., youtu.be/..., youtube.com/embed/...');
+      return;
     }
+    
+    setFormData({
+      ...formData,
+      video_urls: [...formData.video_urls, trimmedUrl],
+    });
+    setVideoUrlInput('');
   };
 
   const handleRemoveVideoUrl = (index: number) => {
@@ -264,16 +276,21 @@ export default function Home() {
 
                 {post.video_urls && post.video_urls.length > 0 && (
                   <div className="space-y-2">
-                    {post.video_urls.map((url, index) => (
-                      <div key={index} className="aspect-video w-full">
-                        <iframe
-                          src={getEmbedUrl(url)}
-                          className="w-full h-full rounded-lg"
-                          allowFullScreen
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        />
-                      </div>
-                    ))}
+                    {post.video_urls.map((url, index) => {
+                      const embedUrl = getEmbedUrl(url);
+                      if (!embedUrl) return null; // Skip invalid URLs
+                      return (
+                        <div key={index} className="aspect-video w-full">
+                          <iframe
+                            src={embedUrl}
+                            className="w-full h-full rounded-lg"
+                            allowFullScreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            sandbox="allow-scripts allow-same-origin allow-presentation"
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

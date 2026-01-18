@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { LogOut, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { NotificationToggle } from '@/components/NotificationToggle';
 
 export default function Header() {
   const { user, isAdmin, signOut } = useAuth();
@@ -31,7 +30,6 @@ export default function Header() {
         </div>
         
         <div className="flex items-center gap-1">
-          <NotificationToggle />
           {user && (
             <Button
               variant="ghost"

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
+import { useProfile } from '@/hooks/useFriends';
 
 export interface Event {
   id: string;
@@ -162,6 +163,7 @@ export function useAssociations() {
 
 export function useUserSubscriptions() {
   const { user } = useAuth();
+  const { data: profile } = useProfile();
   const queryClient = useQueryClient();
 
   const { data: subscriptions, isLoading } = useQuery({
@@ -181,12 +183,13 @@ export function useUserSubscriptions() {
   });
 
   const toggleSubscription = useMutation({
-    mutationFn: async (eventId: string) => {
+    mutationFn: async ({ eventId, eventTitle }: { eventId: string; eventTitle: string }) => {
       if (!user) throw new Error('Not authenticated');
 
       const isSubscribed = subscriptions?.includes(eventId);
 
       if (isSubscribed) {
+        // Unsubscribe from event
         const { error } = await supabase
           .from('user_event_subscriptions')
           .delete()
@@ -194,16 +197,44 @@ export function useUserSubscriptions() {
           .eq('event_id', eventId);
 
         if (error) throw error;
+
+        // Also remove from user_calendar_events
+        await supabase
+          .from('user_calendar_events')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('event_id', eventId);
       } else {
+        // Subscribe to event
         const { error } = await supabase
           .from('user_event_subscriptions')
           .insert({ user_id: user.id, event_id: eventId });
 
         if (error) throw error;
+
+        // Also add to user_calendar_events for friends feature
+        await supabase
+          .from('user_calendar_events')
+          .insert({ user_id: user.id, event_id: eventId });
+
+        // Notify friends (fire and forget)
+        const userName = profile?.first_name && profile?.last_name
+          ? `${profile.first_name} ${profile.last_name}`
+          : profile?.full_name || 'Un ami';
+
+        supabase.functions.invoke('notify-friends-calendar', {
+          body: {
+            userId: user.id,
+            eventId,
+            eventTitle,
+            userName,
+          },
+        }).catch(console.error);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-calendar-events'] });
     },
   });
 

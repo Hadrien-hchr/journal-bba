@@ -6,12 +6,15 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Events from "./pages/Events";
 import CalendarPage from "./pages/CalendarPage";
 import Information from "./pages/Information";
 import Interviews from "./pages/Interviews";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import AppLayout from "@/components/layout/AppLayout";
+import { CompleteProfileModal } from "@/components/auth/CompleteProfileModal";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -31,13 +34,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" replace />;
   }
 
-  return <AppLayout>{children}</AppLayout>;
+  return (
+    <AppLayout>
+      <CompleteProfileModal />
+      {children}
+    </AppLayout>
+  );
 }
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<Index />} />
       <Route
         path="/events"
@@ -68,6 +77,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Interviews />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <ProtectedRoute>
+            <Account />
           </ProtectedRoute>
         }
       />

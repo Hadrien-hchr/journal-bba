@@ -6,6 +6,8 @@ import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CalendarDays, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FriendsAttendingButton } from '@/components/calendar/FriendsAttendingButton';
+
 export default function CalendarPage() {
   const {
     events,
@@ -155,6 +157,7 @@ export default function CalendarPage() {
                               {isSubscribed && <span className="ml-2 text-xs text-primary">• Dans votre calendrier</span>}
                             </p>
                           </div>
+                          <FriendsAttendingButton eventId={event.id} eventTitle={event.title} />
                         </div>
                       </CardContent>
                     </Card>;
@@ -196,6 +199,7 @@ export default function CalendarPage() {
                             {(event.custom_association_name || event.associations?.name) && ` • ${event.custom_association_name || event.associations?.name}`}
                           </p>
                         </div>
+                        <FriendsAttendingButton eventId={event.id} eventTitle={event.title} />
                       </div>
                     </CardContent>
                   </Card>)}

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Shield, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 
 const emailSchema = z.string().email('Email invalide');
 const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
@@ -21,11 +22,13 @@ export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   useEffect(() => {
     if (user && !loading) {
@@ -49,6 +52,13 @@ export default function Auth() {
     }
 
     if (isSignUp) {
+      if (!firstName.trim() || !lastName.trim()) {
+        toast.error('Veuillez remplir tous les champs');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
       const { error } = await signUp(email, password, fullName);
       if (error) {
         if (error.message.includes('already registered')) {
@@ -57,8 +67,7 @@ export default function Auth() {
           toast.error(error.message);
         }
       } else {
-        toast.success('Compte créé avec succès !');
-        navigate('/');
+        toast.success('Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription.');
       }
     } else {
       const { error } = await signIn(email, password);
@@ -112,6 +121,25 @@ export default function Auth() {
     );
   }
 
+  // Show forgot password form
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <div className="mb-8 text-center animate-fade-in">
+          <h1 className="text-4xl font-display font-bold text-gradient mb-2">
+            Journal BBA
+          </h1>
+          <p className="text-muted-foreground">
+            Votre source d'informations
+          </p>
+        </div>
+        <div className="w-full max-w-md">
+          <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       {/* Logo / Header */}
@@ -157,14 +185,27 @@ export default function Auth() {
             <CardContent>
               <form onSubmit={handleUserAuth} className="space-y-4">
                 {isSignUp && (
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nom complet</Label>
-                    <Input
-                      id="fullName"
-                      placeholder="Jean Dupont"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">Prénom</Label>
+                      <Input
+                        id="firstName"
+                        placeholder="Jean"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required={isSignUp}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Nom</Label>
+                      <Input
+                        id="lastName"
+                        placeholder="Dupont"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required={isSignUp}
+                      />
+                    </div>
                   </div>
                 )}
                 
@@ -200,6 +241,18 @@ export default function Auth() {
                     </button>
                   </div>
                 </div>
+
+                {!isSignUp && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Mot de passe oublié ?
+                    </button>
+                  </div>
+                )}
 
                 <Button type="submit" className="w-full gradient-red shadow-red" disabled={isSubmitting}>
                   {isSubmitting ? (
@@ -271,6 +324,16 @@ export default function Auth() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                </div>
+
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Mot de passe oublié ?
+                  </button>
                 </div>
 
                 <Button type="submit" className="w-full gradient-red shadow-red" disabled={isSubmitting}>

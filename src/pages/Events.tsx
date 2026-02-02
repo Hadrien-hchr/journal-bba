@@ -151,13 +151,13 @@ export default function Events() {
     }
   };
 
-  const handleSubscriptionToggle = async (eventId: string) => {
+  const handleSubscriptionToggle = async (eventId: string, eventTitle: string) => {
     if (!user) {
       toast.error('Connectez-vous pour vous abonner aux événements');
       return;
     }
     try {
-      await toggleSubscription.mutateAsync(eventId);
+      await toggleSubscription.mutateAsync({ eventId, eventTitle });
     } catch (error) {
       toast.error('Erreur lors de la mise à jour');
     }
@@ -471,7 +471,7 @@ export default function Events() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleSubscriptionToggle(event.id)}
+                        onClick={() => handleSubscriptionToggle(event.id, event.title)}
                         className={cn(
                           'h-8 w-8',
                           subscriptions.includes(event.id) && 'text-primary'

@@ -79,19 +79,17 @@ export function useFriends() {
     queryFn: async () => {
       if (!user) return [];
       
-      // Get friendships where user is either user_id or friend_id
+      // Get friendships where user is user_id only (avoids duplicates since we store both directions)
       const { data: friendships, error } = await supabase
         .from('friendships')
         .select('*')
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+        .eq('user_id', user.id);
 
       if (error) throw error;
       if (!friendships || friendships.length === 0) return [];
 
-      // Get the friend IDs
-      const friendIds = friendships.map(f => 
-        f.user_id === user.id ? f.friend_id : f.user_id
-      );
+      // Get the friend IDs (always friend_id since we query where user_id = current user)
+      const friendIds = friendships.map(f => f.friend_id);
 
       // Fetch friend profiles
       const { data: profiles, error: profileError } = await supabase
@@ -103,9 +101,7 @@ export function useFriends() {
 
       return friendships.map(f => ({
         ...f,
-        friend: profiles?.find(p => 
-          p.id === (f.user_id === user.id ? f.friend_id : f.user_id)
-        ),
+        friend: profiles?.find(p => p.id === f.friend_id),
       })) as Friendship[];
     },
     enabled: !!user,

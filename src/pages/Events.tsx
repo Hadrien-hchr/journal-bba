@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEvents, useDeleteEvent, useUserSubscriptions, useCreateEvent, useUpdateEvent } from '@/hooks/useEvents';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X } from 'lucide-react';
+import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { FileUploadInput } from '@/components/FileUploadInput';
+import { AssociationBanner } from '@/components/events/AssociationBanner';
 
 const ASSOCIATIONS_LIST = [
   'BDE',
@@ -30,9 +32,21 @@ const ASSOCIATIONS_LIST = [
   "Mount'Em",
 ];
 
+const CATEGORIES_LIST = [
+  'Soirée',
+  'Sport',
+  'Culture',
+  'Conférence',
+  'Voyage',
+  'Afterwork',
+  'Autre',
+];
+
 const FILTER_ASSOCIATIONS = ['Tous', ...ASSOCIATIONS_LIST];
+const FILTER_CATEGORIES = ['Toutes', ...CATEGORIES_LIST];
 
 export default function Events() {
+  const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
   const { events, isLoading } = useEvents();
   const { subscriptions, toggleSubscription } = useUserSubscriptions();
@@ -42,6 +56,7 @@ export default function Events() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAssociation, setSelectedAssociation] = useState('Tous');
+  const [selectedCategory, setSelectedCategory] = useState('Toutes');
   const [editingPhotoLink, setEditingPhotoLink] = useState<string | null>(null);
   const [photoLinkValue, setPhotoLinkValue] = useState('');
   
@@ -58,6 +73,7 @@ export default function Events() {
     event_date: '',
     price: '',
     ticket_link: '',
+    category: '',
     is_published: true,
     publish_at: '',
   });
@@ -119,6 +135,7 @@ export default function Events() {
         event_date: new Date(formData.event_date).toISOString(),
         price: formData.price ? parseFloat(formData.price) : undefined,
         ticket_link: formData.ticket_link || undefined,
+        category: formData.category || undefined,
         is_published: formData.is_published,
         publish_at: formData.publish_at ? new Date(formData.publish_at).toISOString() : undefined,
       });
@@ -132,6 +149,7 @@ export default function Events() {
         event_date: '',
         price: '',
         ticket_link: '',
+        category: '',
         is_published: true,
         publish_at: '',
       });
@@ -182,12 +200,18 @@ export default function Events() {
     if (!events) return [];
     
     // Filter by association
-    const filtered = events.filter((event) => {
+    let filtered = events.filter((event) => {
       if (selectedAssociation === 'Tous') return true;
       const eventAssocName = event.custom_association_name || event.associations?.name || '';
       // Check if any of the associations match (comma-separated)
       const assocList = eventAssocName.split(',').map((a) => a.trim());
       return assocList.includes(selectedAssociation);
+    });
+
+    // Filter by category
+    filtered = filtered.filter((event) => {
+      if (selectedCategory === 'Toutes') return true;
+      return event.category === selectedCategory;
     });
     
     const franceNow = getFranceTime();
@@ -211,7 +235,7 @@ export default function Events() {
     
     // Combine: upcoming first, then past
     return [...upcoming, ...past];
-  }, [events, selectedAssociation]);
+  }, [events, selectedAssociation, selectedCategory]);
 
   if (isLoading) {
     return (
@@ -358,6 +382,21 @@ export default function Events() {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">Catégorie</Label>
+                  <select
+                    id="category"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="">Sélectionner une catégorie</option>
+                    {CATEGORIES_LIST.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
                 
                 <div className="flex items-center justify-between">
                   <Label htmlFor="is_published">Publier immédiatement</Label>
@@ -416,6 +455,32 @@ export default function Events() {
         </div>
       </div>
 
+      {/* Category filter buttons */}
+      <div className="overflow-x-auto pb-2 -mx-4 px-4">
+        <div className="flex gap-2 min-w-max items-center">
+          <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          {FILTER_CATEGORIES.map((cat) => (
+            <Button
+              key={cat}
+              variant={selectedCategory === cat ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedCategory(cat)}
+              className={cn(
+                'whitespace-nowrap transition-all',
+                selectedCategory === cat && 'gradient-red shadow-red'
+              )}
+            >
+              {cat}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Association banner when filtered */}
+      {selectedAssociation !== 'Tous' && (
+        <AssociationBanner associationName={selectedAssociation} />
+      )}
+
       {sortedAndFilteredEvents.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -437,9 +502,10 @@ export default function Events() {
               <Card 
                 key={event.id} 
                 className={cn(
-                  'overflow-hidden animate-scale-in shadow-soft hover:shadow-medium transition-all',
+                  'overflow-hidden animate-scale-in shadow-soft hover:shadow-medium transition-all cursor-pointer',
                   isPast && 'opacity-60 grayscale-[30%]'
                 )}
+                onClick={() => navigate(`/events/${event.id}`)}
               >
                 {event.image_url && (
                   <div className="aspect-video w-full overflow-hidden relative">
@@ -461,17 +527,27 @@ export default function Events() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-lg font-display line-clamp-2">{event.title}</CardTitle>
-                      {associationName && (
-                        <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-accent text-accent-foreground">
-                          {associationName}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {associationName && (
+                          <span className="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-accent text-accent-foreground">
+                            {associationName}
+                          </span>
+                        )}
+                        {event.category && (
+                          <span className="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                            {event.category}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleSubscriptionToggle(event.id, event.title)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSubscriptionToggle(event.id, event.title);
+                        }}
                         className={cn(
                           'h-8 w-8',
                           subscriptions.includes(event.id) && 'text-primary'
@@ -488,7 +564,10 @@ export default function Events() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(event.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(event.id);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -515,7 +594,7 @@ export default function Events() {
                     )}
                   </div>
                 </CardContent>
-                <CardFooter className="pt-2 flex flex-col gap-2">
+                <CardFooter className="pt-2 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
                   {/* Ticket link for upcoming events */}
                   {!isPast && event.ticket_link && (
                     <Button
@@ -523,7 +602,7 @@ export default function Events() {
                       className="w-full border-primary text-primary hover:bg-accent"
                       asChild
                     >
-                      <a href={event.ticket_link} target="_blank" rel="noopener noreferrer">
+                      <a href={event.ticket_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                         <Ticket className="h-4 w-4 mr-2" />
                         Billetterie
                       </a>
@@ -544,10 +623,14 @@ export default function Events() {
                                 value={photoLinkValue}
                                 onChange={(e) => setPhotoLinkValue(e.target.value)}
                                 className="flex-1"
+                                onClick={(e) => e.stopPropagation()}
                               />
                               <Button 
                                 size="sm" 
-                                onClick={() => handleSavePhotoLink(event.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSavePhotoLink(event.id);
+                                }}
                                 disabled={updateEvent.isPending}
                               >
                                 {updateEvent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enregistrer'}
@@ -555,7 +638,8 @@ export default function Events() {
                               <Button 
                                 size="sm" 
                                 variant="ghost"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setEditingPhotoLink(null);
                                   setPhotoLinkValue('');
                                 }}
@@ -568,7 +652,8 @@ export default function Events() {
                               variant="outline"
                               size="sm"
                               className="w-full"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setEditingPhotoLink(event.id);
                                 setPhotoLinkValue(event.photo_link || '');
                               }}
@@ -587,7 +672,7 @@ export default function Events() {
                           className="w-full border-primary text-primary hover:bg-accent"
                           asChild
                         >
-                          <a href={event.photo_link} target="_blank" rel="noopener noreferrer">
+                          <a href={event.photo_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                             <CalendarDays className="h-4 w-4 mr-2" />
                             Voir les photos
                           </a>

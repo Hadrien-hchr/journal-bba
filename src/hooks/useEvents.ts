@@ -15,12 +15,27 @@ export interface Event {
   price: number | null;
   ticket_link: string | null;
   photo_link: string | null;
+  category: string | null;
   is_published: boolean;
   publish_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   associations?: { name: string } | null;
+}
+
+export interface Association {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+export interface UpdateAssociationData {
+  id: string;
+  logo_url?: string | null;
+  description?: string | null;
 }
 
 export interface CreateEventData {
@@ -32,6 +47,7 @@ export interface CreateEventData {
   event_date: string;
   price?: number;
   ticket_link?: string;
+  category?: string;
   is_published: boolean;
   publish_at?: string;
 }
@@ -156,7 +172,29 @@ export function useAssociations() {
         .order('name');
 
       if (error) throw error;
-      return data;
+      return data as Association[];
+    },
+  });
+}
+
+export function useUpdateAssociation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateAssociationData) => {
+      const { id, ...updateData } = data;
+      const { data: association, error } = await supabase
+        .from('associations')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return association;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['associations'] });
     },
   });
 }

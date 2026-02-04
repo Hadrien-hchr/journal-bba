@@ -17,17 +17,23 @@ export type Database = {
       associations: {
         Row: {
           created_at: string
+          description: string | null
           id: string
+          logo_url: string | null
           name: string
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
+          logo_url?: string | null
           name: string
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
         }
         Relationships: []
@@ -35,6 +41,7 @@ export type Database = {
       events: {
         Row: {
           association_id: string | null
+          category: string | null
           created_at: string
           created_by: string | null
           custom_association_name: string | null
@@ -52,6 +59,7 @@ export type Database = {
         }
         Insert: {
           association_id?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           custom_association_name?: string | null
@@ -69,6 +77,7 @@ export type Database = {
         }
         Update: {
           association_id?: string | null
+          category?: string | null
           created_at?: string
           created_by?: string | null
           custom_association_name?: string | null

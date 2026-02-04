@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
 import CalendarPage from "./pages/CalendarPage";
 import Information from "./pages/Information";
 import Interviews from "./pages/Interviews";
@@ -53,6 +54,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Events />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/:eventId"
+        element={
+          <ProtectedRoute>
+            <EventDetail />
           </ProtectedRoute>
         }
       />

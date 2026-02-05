@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X, Tag } from 'lucide-react';
+import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { FileUploadInput } from '@/components/FileUploadInput';
@@ -32,18 +32,7 @@ const ASSOCIATIONS_LIST = [
   "Mount'Em",
 ];
 
-const CATEGORIES_LIST = [
-  'Soirée',
-  'Sport',
-  'Culture',
-  'Conférence',
-  'Voyage',
-  'Afterwork',
-  'Autre',
-];
-
 const FILTER_ASSOCIATIONS = ['Tous', ...ASSOCIATIONS_LIST];
-const FILTER_CATEGORIES = ['Toutes', ...CATEGORIES_LIST];
 
 export default function Events() {
   const navigate = useNavigate();
@@ -56,7 +45,7 @@ export default function Events() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAssociation, setSelectedAssociation] = useState('Tous');
-  const [selectedCategory, setSelectedCategory] = useState('Toutes');
+  
   const [editingPhotoLink, setEditingPhotoLink] = useState<string | null>(null);
   const [photoLinkValue, setPhotoLinkValue] = useState('');
   
@@ -73,7 +62,6 @@ export default function Events() {
     event_date: '',
     price: '',
     ticket_link: '',
-    category: '',
     is_published: true,
     publish_at: '',
   });
@@ -135,7 +123,6 @@ export default function Events() {
         event_date: new Date(formData.event_date).toISOString(),
         price: formData.price ? parseFloat(formData.price) : undefined,
         ticket_link: formData.ticket_link || undefined,
-        category: formData.category || undefined,
         is_published: formData.is_published,
         publish_at: formData.publish_at ? new Date(formData.publish_at).toISOString() : undefined,
       });
@@ -149,7 +136,6 @@ export default function Events() {
         event_date: '',
         price: '',
         ticket_link: '',
-        category: '',
         is_published: true,
         publish_at: '',
       });
@@ -208,11 +194,6 @@ export default function Events() {
       return assocList.includes(selectedAssociation);
     });
 
-    // Filter by category
-    filtered = filtered.filter((event) => {
-      if (selectedCategory === 'Toutes') return true;
-      return event.category === selectedCategory;
-    });
     
     const franceNow = getFranceTime();
     
@@ -235,7 +216,7 @@ export default function Events() {
     
     // Combine: upcoming first, then past
     return [...upcoming, ...past];
-  }, [events, selectedAssociation, selectedCategory]);
+  }, [events, selectedAssociation]);
 
   if (isLoading) {
     return (
@@ -383,20 +364,6 @@ export default function Events() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Catégorie</Label>
-                  <select
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <option value="">Sélectionner une catégorie</option>
-                    {CATEGORIES_LIST.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
                 
                 <div className="flex items-center justify-between">
                   <Label htmlFor="is_published">Publier immédiatement</Label>
@@ -450,27 +417,6 @@ export default function Events() {
               )}
             >
               {assoc}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Category filter buttons */}
-      <div className="overflow-x-auto pb-2 -mx-4 px-4">
-        <div className="flex gap-2 min-w-max items-center">
-          <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          {FILTER_CATEGORIES.map((cat) => (
-            <Button
-              key={cat}
-              variant={selectedCategory === cat ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedCategory(cat)}
-              className={cn(
-                'whitespace-nowrap transition-all',
-                selectedCategory === cat && 'gradient-red shadow-red'
-              )}
-            >
-              {cat}
             </Button>
           ))}
         </div>

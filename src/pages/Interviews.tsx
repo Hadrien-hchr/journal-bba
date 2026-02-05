@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInterviews, useCreateInterview, useDeleteInterview } from '@/hooks/useContent';
+import { useContentCategories } from '@/hooks/useContentCategories';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,35 +13,44 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { FileUploadInput } from '@/components/FileUploadInput';
+import { CategoryManager } from '@/components/content/CategoryManager';
 
 export default function Interviews() {
   const { isAdmin } = useAuth();
   const { interviews, isLoading } = useInterviews();
+  const { data: categories } = useContentCategories('interviews');
   const createInterview = useCreateInterview();
   const deleteInterview = useDeleteInterview();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [formData, setFormData] = useState({
     title: '',
     video_url: '',
     thumbnail_url: '',
     description: '',
+    category_id: '',
   });
 
   // Convert YouTube URL to embed URL with strict validation
   const getEmbedUrl = (url: string): string | null => {
-    // Strict YouTube URL validation - only allows valid YouTube video IDs (11 alphanumeric chars, dash, underscore)
     const youtubeMatch = url.match(/^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$/);
     if (youtubeMatch) {
       return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
     }
-    return null; // Reject non-YouTube URLs for security
+    return null;
   };
 
   // Validate YouTube URL
   const isValidYoutubeUrl = (url: string): boolean => {
     return /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&].*)?$/.test(url);
   };
+
+  // Filter interviews by category
+  const filteredInterviews = useMemo(() => {
+    if (selectedCategory === 'all') return interviews;
+    return interviews.filter(i => i.category_id === selectedCategory);
+  }, [interviews, selectedCategory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,11 +71,12 @@ export default function Interviews() {
         video_url: formData.video_url.trim(),
         thumbnail_url: formData.thumbnail_url.trim() || undefined,
         description: formData.description.trim() || undefined,
+        category_id: formData.category_id || undefined,
       });
       
       toast.success('Interview ajoutée !');
       setIsDialogOpen(false);
-      setFormData({ title: '', video_url: '', thumbnail_url: '', description: '' });
+      setFormData({ title: '', video_url: '', thumbnail_url: '', description: '', category_id: '' });
     } catch (error) {
       toast.error('Erreur lors de l\'ajout');
     }
@@ -104,7 +115,7 @@ export default function Interviews() {
                 Ajouter
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display">Nouvelle interview</DialogTitle>
               </DialogHeader>
@@ -134,6 +145,23 @@ export default function Interviews() {
                     Supporte YouTube et les liens embed
                   </p>
                 </div>
+
+                {categories && categories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Catégorie</Label>
+                    <select
+                      id="category"
+                      value={formData.category_id}
+                      onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Sans catégorie</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 
                 <FileUploadInput
                   label="Miniature (optionnel)"
@@ -169,7 +197,14 @@ export default function Interviews() {
         )}
       </div>
 
-      {interviews.length === 0 ? (
+      {/* Category filter */}
+      <CategoryManager
+        section="interviews"
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+      {filteredInterviews.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <PlayCircle className="h-12 w-12 text-muted-foreground mb-4" />
@@ -178,7 +213,7 @@ export default function Interviews() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {interviews.map((interview) => (
+          {filteredInterviews.map((interview) => (
             <Card key={interview.id} className="overflow-hidden animate-scale-in shadow-soft">
               {(() => {
                 const embedUrl = getEmbedUrl(interview.video_url);

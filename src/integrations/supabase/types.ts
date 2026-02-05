@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      content_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          section: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          section: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          section?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           association_id: string | null
@@ -252,6 +279,7 @@ export type Database = {
       }
       information: {
         Row: {
+          category_id: string | null
           content: string
           created_at: string
           created_by: string | null
@@ -261,6 +289,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           content: string
           created_at?: string
           created_by?: string | null
@@ -270,6 +299,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           content?: string
           created_at?: string
           created_by?: string | null
@@ -278,10 +308,19 @@ export type Database = {
           title?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "information_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "content_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       interviews: {
         Row: {
+          category_id: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -291,6 +330,7 @@ export type Database = {
           video_url: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -300,6 +340,7 @@ export type Database = {
           video_url: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -308,7 +349,15 @@ export type Database = {
           title?: string
           video_url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "interviews_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "content_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

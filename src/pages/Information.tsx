@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInformation, useCreateInformation, useDeleteInformation } from '@/hooks/useContent';
+import { useContentCategories } from '@/hooks/useContentCategories';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,17 +13,27 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { FileUploadInput } from '@/components/FileUploadInput';
+import { CategoryManager } from '@/components/content/CategoryManager';
 
 export default function Information() {
   const { isAdmin } = useAuth();
   const { information, isLoading } = useInformation();
+  const { data: categories } = useContentCategories('information');
   const createInfo = useCreateInformation();
   const deleteInfo = useDeleteInformation();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+
+  // Filter information by category
+  const filteredInformation = useMemo(() => {
+    if (selectedCategory === 'all') return information;
+    return information.filter(i => i.category_id === selectedCategory);
+  }, [information, selectedCategory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +48,7 @@ export default function Information() {
         title: title.trim() || undefined,
         content: content.trim(),
         image_url: imageUrl || undefined,
+        category_id: categoryId || undefined,
       });
       
       toast.success('Information ajoutée !');
@@ -44,6 +56,7 @@ export default function Information() {
       setTitle('');
       setContent('');
       setImageUrl('');
+      setCategoryId('');
     } catch (error) {
       toast.error('Erreur lors de l\'ajout');
     }
@@ -109,6 +122,23 @@ export default function Information() {
                   />
                 </div>
 
+                {categories && categories.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Catégorie</Label>
+                    <select
+                      id="category"
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Sans catégorie</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <FileUploadInput
                   label="Image (optionnel)"
                   value={imageUrl}
@@ -132,7 +162,14 @@ export default function Information() {
         )}
       </div>
 
-      {information.length === 0 ? (
+      {/* Category filter */}
+      <CategoryManager
+        section="information"
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+      {filteredInformation.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Info className="h-12 w-12 text-muted-foreground mb-4" />
@@ -141,7 +178,7 @@ export default function Information() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {information.map((info) => (
+          {filteredInformation.map((info) => (
             <Card key={info.id} className="animate-scale-in shadow-soft overflow-hidden">
               {info.image_url && (
                 <img

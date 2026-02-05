@@ -93,6 +93,7 @@ export interface Information {
   title: string | null;
   content: string;
   image_url: string | null;
+  category_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -139,7 +140,7 @@ export function useCreateInformation() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (data: { title?: string; content: string; image_url?: string }) => {
+    mutationFn: async (data: { title?: string; content: string; image_url?: string; category_id?: string }) => {
       const { data: info, error } = await supabase
         .from('information')
         .insert({ ...data, created_by: user?.id })
@@ -176,6 +177,7 @@ export interface Interview {
   video_url: string;
   thumbnail_url: string | null;
   description: string | null;
+  category_id: string | null;
   created_by: string | null;
   created_at: string;
 }
@@ -221,7 +223,7 @@ export function useCreateInterview() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (data: { title: string; video_url: string; thumbnail_url?: string; description?: string }) => {
+    mutationFn: async (data: { title: string; video_url: string; thumbnail_url?: string; description?: string; category_id?: string }) => {
       const { data: interview, error } = await supabase
         .from('interviews')
         .insert({ ...data, created_by: user?.id })

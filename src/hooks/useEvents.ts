@@ -11,6 +11,7 @@ export interface Event {
   association_id: string | null;
   custom_association_name: string | null;
   image_url: string | null;
+  image_size: 'small' | 'medium' | 'large' | null;
   event_date: string;
   price: number | null;
   ticket_link: string | null;
@@ -44,6 +45,7 @@ export interface CreateEventData {
   association_id?: string;
   custom_association_name?: string;
   image_url?: string;
+  image_size?: 'small' | 'medium' | 'large';
   event_date: string;
   price?: number;
   ticket_link?: string;
@@ -55,6 +57,7 @@ export interface CreateEventData {
 export interface UpdateEventData {
   id: string;
   photo_link?: string | null;
+  image_size?: 'small' | 'medium' | 'large' | null;
 }
 
 export function useEvents() {

@@ -13,11 +13,18 @@ import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X } from 'lucide-react';
+import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { FileUploadInput } from '@/components/FileUploadInput';
-import { AssociationBanner } from '@/components/events/AssociationBanner';
+import { CollapsibleAssociationBanner } from '@/components/events/CollapsibleAssociationBanner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const IMAGE_SIZE_OPTIONS = [
+  { value: 'small', label: 'Petite', aspectClass: 'aspect-video max-h-32' },
+  { value: 'medium', label: 'Moyenne', aspectClass: 'aspect-video max-h-48' },
+  { value: 'large', label: 'Grande', aspectClass: 'aspect-video' },
+] as const;
 
 const ASSOCIATIONS_LIST = [
   'BDE',
@@ -59,6 +66,7 @@ export default function Events() {
     title: '',
     description: '',
     image_url: '',
+    image_size: 'medium' as 'small' | 'medium' | 'large',
     event_date: '',
     price: '',
     ticket_link: '',
@@ -120,6 +128,7 @@ export default function Events() {
         description: formData.description || undefined,
         custom_association_name: associationsString || undefined,
         image_url: formData.image_url || undefined,
+        image_size: formData.image_size,
         event_date: new Date(formData.event_date).toISOString(),
         price: formData.price ? parseFloat(formData.price) : undefined,
         ticket_link: formData.ticket_link || undefined,
@@ -133,6 +142,7 @@ export default function Events() {
         title: '',
         description: '',
         image_url: '',
+        image_size: 'medium',
         event_date: '',
         price: '',
         ticket_link: '',
@@ -329,6 +339,31 @@ export default function Events() {
                 />
                 
                 <div className="space-y-2">
+                  <Label>Taille de l'image</Label>
+                  <Select
+                    value={formData.image_size}
+                    onValueChange={(value: 'small' | 'medium' | 'large') => setFormData({ ...formData, image_size: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choisir la taille" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IMAGE_SIZE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            {option.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Contrôle la taille d'affichage de l'image dans la liste
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
                   <Label htmlFor="event_date">Date de l'événement *</Label>
                   <Input
                     id="event_date"
@@ -424,7 +459,7 @@ export default function Events() {
 
       {/* Association banner when filtered */}
       {selectedAssociation !== 'Tous' && (
-        <AssociationBanner associationName={selectedAssociation} />
+        <CollapsibleAssociationBanner associationName={selectedAssociation} />
       )}
 
       {sortedAndFilteredEvents.length === 0 ? (
@@ -444,6 +479,10 @@ export default function Events() {
             const isPast = isEventPast(event.event_date);
             const associationName = event.custom_association_name || event.associations?.name;
             
+            // Get the image size class based on event settings
+            const imageSizeOption = IMAGE_SIZE_OPTIONS.find(opt => opt.value === (event.image_size || 'medium'));
+            const imageSizeClass = imageSizeOption?.aspectClass || 'aspect-video max-h-48';
+            
             return (
               <Card 
                 key={event.id} 
@@ -454,7 +493,7 @@ export default function Events() {
                 onClick={() => navigate(`/events/${event.id}`)}
               >
                 {event.image_url && (
-                  <div className="aspect-video w-full overflow-hidden relative">
+                  <div className={cn("w-full overflow-hidden relative", imageSizeClass)}>
                     <img
                       src={event.image_url}
                       alt={event.title}

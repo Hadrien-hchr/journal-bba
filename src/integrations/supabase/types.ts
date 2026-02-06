@@ -75,6 +75,7 @@ export type Database = {
           description: string | null
           event_date: string
           id: string
+          image_size: string | null
           image_url: string | null
           is_published: boolean | null
           photo_link: string | null
@@ -93,6 +94,7 @@ export type Database = {
           description?: string | null
           event_date: string
           id?: string
+          image_size?: string | null
           image_url?: string | null
           is_published?: boolean | null
           photo_link?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           description?: string | null
           event_date?: string
           id?: string
+          image_size?: string | null
           image_url?: string | null
           is_published?: boolean | null
           photo_link?: string | null

@@ -1,1 +1,7 @@
 project_id = "eghmwozfvbohhghlydiu"
+
+[functions.notify-friends-calendar]
+verify_jwt = false
+
+[functions.send-auth-email]
+verify_jwt = false

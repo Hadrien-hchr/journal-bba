@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEvents, useDeleteEvent, useUserSubscriptions, useCreateEvent, useUpdateEvent } from '@/hooks/useEvents';
+import { useEvents, useDeleteEvent, useUserSubscriptions, useCreateEvent, useUpdateEvent, useAssociations } from '@/hooks/useEvents';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,14 @@ import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X, ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X, ImageIcon, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { FileUploadInput } from '@/components/FileUploadInput';
 import { CollapsibleAssociationBanner } from '@/components/events/CollapsibleAssociationBanner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 const IMAGE_SIZE_OPTIONS = [
   { value: 'small', label: 'Petite', aspectClass: 'aspect-video max-h-32' },
@@ -26,29 +28,30 @@ const IMAGE_SIZE_OPTIONS = [
   { value: 'large', label: 'Grande', aspectClass: 'aspect-video' },
 ] as const;
 
-const ASSOCIATIONS_LIST = [
-  'BDE',
-  'BDS',
-  'BDA',
-  'BDI',
-  'La Grappe',
-  'Viatik',
-  "Financ'Em",
-  "Captur'Em",
-  "Em'look",
-  "Mount'Em",
-];
+// Dynamic associations list from database
 
-const FILTER_ASSOCIATIONS = ['Tous', ...ASSOCIATIONS_LIST];
 
 export default function Events() {
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
   const { events, isLoading } = useEvents();
+  const { data: associations } = useAssociations();
   const { subscriptions, toggleSubscription } = useUserSubscriptions();
   const deleteEvent = useDeleteEvent();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
+  const queryClient = useQueryClient();
+
+  // Dynamic associations list from DB
+  const ASSOCIATIONS_LIST = useMemo(() => 
+    (associations || []).map((a) => a.name), 
+    [associations]
+  );
+  const FILTER_ASSOCIATIONS = useMemo(() => ['Tous', ...ASSOCIATIONS_LIST], [ASSOCIATIONS_LIST]);
+
+  // Manage sections dialog
+  const [isSectionsDialogOpen, setIsSectionsDialogOpen] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAssociation, setSelectedAssociation] = useState('Tous');
@@ -190,8 +193,39 @@ export default function Events() {
       toast.error('Erreur lors de l\'enregistrement');
     }
   };
+  const handleAddSection = async () => {
+    const name = newSectionName.trim();
+    if (!name) return;
+    if (ASSOCIATIONS_LIST.some((a) => a.toLowerCase() === name.toLowerCase())) {
+      toast.error('Cette section existe déjà');
+      return;
+    }
+    try {
+      const { error } = await supabase.from('associations').insert({ name });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['associations'] });
+      setNewSectionName('');
+      toast.success(`Section "${name}" ajoutée`);
+    } catch {
+      toast.error("Erreur lors de l'ajout");
+    }
+  };
 
-  // Filter and sort events
+  const handleDeleteSection = async (name: string) => {
+    const assoc = associations?.find((a) => a.name === name);
+    if (!assoc) return;
+    try {
+      const { error } = await supabase.from('associations').delete().eq('id', assoc.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['associations'] });
+      if (selectedAssociation === name) setSelectedAssociation('Tous');
+      toast.success(`Section "${name}" supprimée`);
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
+
   const sortedAndFilteredEvents = useMemo(() => {
     if (!events) return [];
     
@@ -439,7 +473,7 @@ export default function Events() {
 
       {/* Association filter buttons */}
       <div className="overflow-x-auto pb-2 -mx-4 px-4">
-        <div className="flex gap-2 min-w-max">
+        <div className="flex gap-2 min-w-max items-center">
           {FILTER_ASSOCIATIONS.map((assoc) => (
             <Button
               key={assoc}
@@ -454,6 +488,51 @@ export default function Events() {
               {assoc}
             </Button>
           ))}
+          {isAdmin && (
+            <Dialog open={isSectionsDialogOpen} onOpenChange={setIsSectionsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="ml-1">
+                  <Settings2 className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="font-display">Gérer les sections</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newSectionName}
+                      onChange={(e) => setNewSectionName(e.target.value)}
+                      placeholder="Nom de la nouvelle section..."
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddSection()}
+                    />
+                    <Button onClick={handleAddSection} className="gradient-red shadow-red shrink-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {ASSOCIATIONS_LIST.map((name) => (
+                      <div key={name} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                        <span className="text-sm font-medium">{name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteSection(name)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    {ASSOCIATIONS_LIST.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Aucune section</p>
+                    )}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 

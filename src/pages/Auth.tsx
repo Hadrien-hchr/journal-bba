@@ -58,6 +58,12 @@ export default function Auth() {
         return;
       }
 
+      if (!email.endsWith('@edu.em-lyon.com')) {
+        toast.error('Seules les adresses email @edu.em-lyon.com sont autorisées');
+        setIsSubmitting(false);
+        return;
+      }
+
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
       const { error } = await signUp(email, password, fullName);
       if (error) {

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       associations: {
         Row: {
           created_at: string
@@ -282,32 +306,38 @@ export type Database = {
       }
       information: {
         Row: {
+          background_color: string | null
           category_id: string | null
           content: string
           created_at: string
           created_by: string | null
           id: string
           image_url: string | null
+          layout_blocks: Json | null
           title: string | null
           updated_at: string
         }
         Insert: {
+          background_color?: string | null
           category_id?: string | null
           content: string
           created_at?: string
           created_by?: string | null
           id?: string
           image_url?: string | null
+          layout_blocks?: Json | null
           title?: string | null
           updated_at?: string
         }
         Update: {
+          background_color?: string | null
           category_id?: string | null
           content?: string
           created_at?: string
           created_by?: string | null
           id?: string
           image_url?: string | null
+          layout_blocks?: Json | null
           title?: string | null
           updated_at?: string
         }

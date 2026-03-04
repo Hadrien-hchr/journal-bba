@@ -1,17 +1,31 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { CalendarDays, Home, Info, PlayCircle, PartyPopper } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppSetting } from '@/hooks/useAppSettings';
+import * as LucideIcons from 'lucide-react';
 
-const navItems = [
+const staticNavItems = [
   { path: '/calendar', icon: CalendarDays, label: 'Calendrier' },
   { path: '/events', icon: PartyPopper, label: 'Événements' },
   { path: '/', icon: Home, label: 'Accueil' },
-  { path: '/info', icon: Info, label: 'Infos' },
-  { path: '/interviews', icon: PlayCircle, label: 'Interviews' },
 ];
+
+const interviewsItem = { path: '/interviews', icon: PlayCircle, label: 'Interviews' };
 
 export default function BottomNav() {
   const location = useLocation();
+  const { data: infoTabSetting } = useAppSetting('info_tab');
+
+  const tabSettings = infoTabSetting?.value as { name?: string; icon?: string } | undefined;
+  const infoLabel = tabSettings?.name || 'Infos';
+  const infoIconName = tabSettings?.icon || 'Info';
+  const InfoIcon = (LucideIcons as any)[infoIconName] || Info;
+
+  const navItems = [
+    ...staticNavItems,
+    { path: '/info', icon: InfoIcon, label: infoLabel },
+    interviewsItem,
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-background border-t border-border shadow-medium safe-bottom">

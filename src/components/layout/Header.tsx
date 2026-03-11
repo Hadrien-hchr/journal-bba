@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import logoJ from '@/assets/logo-j.jpeg';
 
 export default function Header() {
   const { user, isAdmin, signOut } = useAuth();

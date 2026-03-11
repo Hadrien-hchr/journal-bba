@@ -11,6 +11,7 @@ import { Shield, User, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { motion, AnimatePresence } from 'framer-motion';
+import logoJ from '@/assets/logo-j.jpeg';
 
 const emailSchema = z.string().email('Email invalide');
 const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');

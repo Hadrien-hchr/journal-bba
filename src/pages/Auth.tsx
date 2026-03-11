@@ -159,10 +159,8 @@ export default function Auth() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="mb-10 text-center relative z-10"
       >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-red shadow-red mb-4">
-          <span className="text-2xl font-display font-black text-primary-foreground">B</span>
-        </div>
-        <h1 className="text-5xl font-display font-black text-gradient mb-1 tracking-tighter">
+        <img src={logoJ} alt="Journal BBA" className="w-20 h-20 rounded-2xl object-cover shadow-red mx-auto mb-4" />
+        <h1 className="text-5xl font-display font-bold text-gradient mb-1">
           Journal BBA
         </h1>
         <p className="text-muted-foreground text-sm tracking-wide uppercase">

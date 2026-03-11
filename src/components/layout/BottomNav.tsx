@@ -3,6 +3,7 @@ import { CalendarDays, Home, Info, PlayCircle, PartyPopper } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { useAppSetting } from '@/hooks/useAppSettings';
 import * as LucideIcons from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const staticNavItems = [
   { path: '/calendar', icon: CalendarDays, label: 'Calendrier' },
@@ -28,7 +29,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-background border-t border-border shadow-medium safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border/50 safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -39,34 +40,31 @@ export default function BottomNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                'flex flex-col items-center justify-center w-full h-full transition-all duration-200',
-                'active:scale-95'
+                'flex flex-col items-center justify-center w-full h-full relative',
+                'active:scale-95 transition-transform duration-200'
               )}
             >
-              <div
-                className={cn(
-                  'flex flex-col items-center gap-1 transition-all duration-200',
-                  isActive ? 'text-nav-active' : 'text-nav-inactive'
+              <div className="flex flex-col items-center gap-0.5 relative">
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute -inset-x-2 -inset-y-1 bg-primary/10 rounded-xl"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
                 )}
-              >
-                <div
-                  className={cn(
-                    'p-1.5 rounded-xl transition-all duration-200',
-                    isActive && 'bg-accent'
-                  )}
-                >
+                <div className="relative z-10">
                   <Icon
                     className={cn(
-                      'h-5 w-5 transition-all duration-200',
-                      isActive && 'scale-110'
+                      'h-5 w-5 transition-colors duration-200',
+                      isActive ? 'text-primary' : 'text-muted-foreground'
                     )}
-                    strokeWidth={isActive ? 2.5 : 2}
+                    strokeWidth={isActive ? 2.5 : 1.8}
                   />
                 </div>
                 <span
                   className={cn(
-                    'text-xs font-medium transition-all duration-200',
-                    isActive && 'font-semibold'
+                    'text-[10px] font-medium transition-colors duration-200 relative z-10',
+                    isActive ? 'text-primary font-semibold' : 'text-muted-foreground'
                   )}
                 >
                   {item.label}

@@ -10,7 +10,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <main className="flex-1 pb-20 pt-16">
+      <main className="flex-1 pb-20 pt-14 max-w-lg mx-auto w-full">
         {children}
       </main>
       <BottomNav />

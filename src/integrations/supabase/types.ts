@@ -392,6 +392,39 @@ export type Database = {
           },
         ]
       }
+      notification_templates: {
+        Row: {
+          category: string
+          created_at: string
+          enabled: boolean
+          id: string
+          message: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          message: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          message?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -401,7 +434,9 @@ export type Database = {
           full_name: string | null
           id: string
           last_name: string | null
+          onesignal_player_id: string | null
           profile_completed: boolean | null
+          push_enabled: boolean
           updated_at: string
         }
         Insert: {
@@ -412,7 +447,9 @@ export type Database = {
           full_name?: string | null
           id: string
           last_name?: string | null
+          onesignal_player_id?: string | null
           profile_completed?: boolean | null
+          push_enabled?: boolean
           updated_at?: string
         }
         Update: {
@@ -423,7 +460,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           last_name?: string | null
+          onesignal_player_id?: string | null
           profile_completed?: boolean | null
+          push_enabled?: boolean
           updated_at?: string
         }
         Relationships: []

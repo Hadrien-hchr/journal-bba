@@ -138,7 +138,13 @@ export default function Events() {
         is_published: formData.is_published,
         publish_at: formData.publish_at ? new Date(formData.publish_at).toISOString() : undefined,
       });
-      
+
+      // Trigger push (only if published immediately, non-blocking)
+      if (formData.is_published && !formData.publish_at) {
+        const { triggerPush } = await import('@/hooks/useNotificationTemplates');
+        triggerPush('event', formData.title, '/events').catch(console.error);
+      }
+
       toast.success('Événement créé avec succès !');
       setIsDialogOpen(false);
       setFormData({

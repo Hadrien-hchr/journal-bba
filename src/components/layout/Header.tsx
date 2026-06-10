@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { LogOut, Shield, User } from 'lucide-react';
+import { Bell, LogOut, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import logoJ from '@/assets/logo-j.jpeg';
@@ -34,6 +34,17 @@ export default function Header() {
         <div className="flex items-center gap-0.5">
           {user && (
             <>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate('/admin/notifications')}
+                  className="text-muted-foreground hover:text-primary h-9 w-9 rounded-xl"
+                  title="Gestion des notifications"
+                >
+                  <Bell className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"

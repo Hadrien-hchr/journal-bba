@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import BottomNav from './BottomNav';
 import Header from './Header';
+import { PushOptInBanner } from '@/components/notifications/PushOptInBanner';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
       <BottomNav />
+      <PushOptInBanner />
     </div>
   );
 }

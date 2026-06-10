@@ -13,6 +13,7 @@ import CalendarPage from "./pages/CalendarPage";
 import Information from "./pages/Information";
 import Interviews from "./pages/Interviews";
 import Account from "./pages/Account";
+import AdminNotifications from "./pages/AdminNotifications";
 import NotFound from "./pages/NotFound";
 import AppLayout from "@/components/layout/AppLayout";
 import { CompleteProfileModal } from "@/components/auth/CompleteProfileModal";
@@ -94,6 +95,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Account />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/notifications"
+        element={
+          <ProtectedRoute>
+            <AdminNotifications />
           </ProtectedRoute>
         }
       />

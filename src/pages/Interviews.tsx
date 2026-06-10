@@ -73,7 +73,11 @@ export default function Interviews() {
         description: formData.description.trim() || undefined,
         category_id: formData.category_id || undefined,
       });
-      
+
+      // Fire push notification (non-blocking)
+      const { triggerPush } = await import('@/hooks/useNotificationTemplates');
+      triggerPush('interview', formData.title.trim(), '/interviews').catch(console.error);
+
       toast.success('Interview ajoutée !');
       setIsDialogOpen(false);
       setFormData({ title: '', video_url: '', thumbnail_url: '', description: '', category_id: '' });

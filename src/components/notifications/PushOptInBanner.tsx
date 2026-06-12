@@ -37,8 +37,17 @@ export function PushOptInBanner() {
     // Only init OneSignal where push is actually usable
     if (env.supportsPush && (!env.isIOS || env.isStandalone)) {
       initOneSignal();
+      // Re-sync the player ID into the profile (fixes users whose ID never got saved)
+      if (user) {
+        syncPlayerIdOnReady(async (playerId) => {
+          await supabase
+            .from('profiles')
+            .update({ onesignal_player_id: playerId, push_enabled: true })
+            .eq('id', user.id);
+        });
+      }
     }
-  }, [env]);
+  }, [env, user]);
 
   useEffect(() => {
     if (!user) return;

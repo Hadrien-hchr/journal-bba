@@ -4,7 +4,7 @@ import { Bell, X, Share, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { initOneSignal, requestPushPermission } from '@/lib/onesignal';
+import { initOneSignal, requestPushPermission, syncPlayerIdOnReady } from '@/lib/onesignal';
 import { toast } from 'sonner';
 
 const DISMISS_KEY = 'bba_push_dismissed_at';
@@ -37,8 +37,17 @@ export function PushOptInBanner() {
     // Only init OneSignal where push is actually usable
     if (env.supportsPush && (!env.isIOS || env.isStandalone)) {
       initOneSignal();
+      // Re-sync the player ID into the profile (fixes users whose ID never got saved)
+      if (user) {
+        syncPlayerIdOnReady(async (playerId) => {
+          await supabase
+            .from('profiles')
+            .update({ onesignal_player_id: playerId, push_enabled: true })
+            .eq('id', user.id);
+        });
+      }
     }
-  }, [env]);
+  }, [env, user]);
 
   useEffect(() => {
     if (!user) return;

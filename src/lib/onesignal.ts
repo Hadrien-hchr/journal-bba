@@ -45,8 +45,35 @@ export async function requestPushPermission(): Promise<string | null> {
     window.OneSignalDeferred.push(async (OneSignal: any) => {
       try {
         await OneSignal.Notifications.requestPermission();
-        const playerId = OneSignal.User?.PushSubscription?.id ?? null;
-        resolve(playerId);
+
+        // Player ID may not be available immediately — wait for it
+        const getId = () => OneSignal.User?.PushSubscription?.id ?? null;
+        let id = getId();
+        if (id) return resolve(id);
+
+        // Listen for subscription change (v16 API)
+        const onChange = (ev: any) => {
+          const newId = ev?.current?.id ?? getId();
+          if (newId) {
+            try { OneSignal.User.PushSubscription.removeEventListener('change', onChange); } catch {}
+            resolve(newId);
+          }
+        };
+        try {
+          OneSignal.User.PushSubscription.addEventListener('change', onChange);
+        } catch {}
+
+        // Poll fallback (max ~6s)
+        let tries = 0;
+        const poll = setInterval(() => {
+          tries += 1;
+          const pid = getId();
+          if (pid || tries > 30) {
+            clearInterval(poll);
+            try { OneSignal.User.PushSubscription.removeEventListener('change', onChange); } catch {}
+            resolve(pid ?? null);
+          }
+        }, 200);
       } catch (e) {
         console.error('OneSignal permission error', e);
         resolve(null);
@@ -61,5 +88,21 @@ export async function getPlayerId(): Promise<string | null> {
     window.OneSignalDeferred.push((OneSignal: any) => {
       resolve(OneSignal.User?.PushSubscription?.id ?? null);
     });
+  });
+}
+
+// Re-sync the player ID into the profile on every app load (catches late subscriptions)
+export function syncPlayerIdOnReady(onReady: (playerId: string) => void) {
+  if (typeof window === 'undefined') return;
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push((OneSignal: any) => {
+    const current = OneSignal.User?.PushSubscription?.id;
+    if (current) onReady(current);
+    try {
+      OneSignal.User.PushSubscription.addEventListener('change', (ev: any) => {
+        const id = ev?.current?.id;
+        if (id) onReady(id);
+      });
+    } catch {}
   });
 }

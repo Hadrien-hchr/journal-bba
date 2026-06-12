@@ -4,7 +4,7 @@ import { Bell, X, Share, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { initOneSignal, requestPushPermission } from '@/lib/onesignal';
+import { initOneSignal, requestPushPermission, syncPlayerIdOnReady } from '@/lib/onesignal';
 import { toast } from 'sonner';
 
 const DISMISS_KEY = 'bba_push_dismissed_at';

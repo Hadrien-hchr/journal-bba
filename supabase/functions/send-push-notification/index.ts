@@ -73,9 +73,8 @@ Deno.serve(async (req) => {
     };
 
     if (playerIds.length > 0) {
-      // Target our known subscribers directly. Use both keys for v16 + legacy compat.
+      // OneSignal v16 expects subscription IDs (not legacy player IDs). Sending both is rejected.
       payload.include_subscription_ids = playerIds;
-      payload.include_player_ids = playerIds;
     } else {
       // Fallback: broadcast to OneSignal's default segment
       payload.included_segments = ['Subscribed Users', 'All'];

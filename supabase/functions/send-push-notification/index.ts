@@ -51,12 +51,36 @@ Deno.serve(async (req) => {
     const headings = tpl.title.replaceAll('{title}', safeTitle);
     const contents = tpl.message.replaceAll('{title}', safeTitle);
 
+    // Collect known player IDs from our DB (more reliable than OneSignal segments)
+    const { data: subs } = await admin
+      .from('profiles')
+      .select('onesignal_player_id')
+      .eq('push_enabled', true)
+      .not('onesignal_player_id', 'is', null);
+
+    const playerIds = Array.from(
+      new Set(
+        (subs ?? [])
+          .map((r: any) => r.onesignal_player_id)
+          .filter((id: string | null) => typeof id === 'string' && id.length > 0)
+      )
+    );
+
     const payload: Record<string, unknown> = {
       app_id: ONESIGNAL_APP_ID,
-      included_segments: ['Subscribed Users'],
       headings: { en: headings, fr: headings },
       contents: { en: contents, fr: contents },
     };
+
+    if (playerIds.length > 0) {
+      // Target our known subscribers directly. Use both keys for v16 + legacy compat.
+      payload.include_subscription_ids = playerIds;
+      payload.include_player_ids = playerIds;
+    } else {
+      // Fallback: broadcast to OneSignal's default segment
+      payload.included_segments = ['Subscribed Users', 'All'];
+    }
+
     if (url) payload.url = url;
 
     const res = await fetch('https://api.onesignal.com/notifications', {
@@ -69,10 +93,18 @@ Deno.serve(async (req) => {
     });
 
     const body = await res.json();
-    return new Response(JSON.stringify({ ok: res.ok, status: res.status, body }), {
-      status: res.ok ? 200 : 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        ok: res.ok && !body?.errors,
+        status: res.status,
+        targeted: playerIds.length,
+        body,
+      }),
+      {
+        status: res.ok ? 200 : 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500,

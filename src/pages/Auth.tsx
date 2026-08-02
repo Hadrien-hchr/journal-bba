@@ -70,18 +70,22 @@ export default function Auth() {
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
       const { error } = await signUp(email, password, fullName);
       if (error) {
-        if (error.message.includes('already registered')) {
+        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
           toast.error('Cet email est déjà utilisé');
         } else {
           toast.error(error.message);
         }
       } else {
-        toast.success('Compte créé avec succès ! Vérifiez votre email pour confirmer votre inscription.');
+        setPendingEmail(email);
+        setPassword('');
       }
     } else {
       const { error } = await signIn(email, password);
       if (error) {
-        if (error.message.includes('Invalid login')) {
+        if (error.message.toLowerCase().includes('email not confirmed')) {
+          toast.error('Veuillez vérifier votre adresse email avant de vous connecter.');
+          setPendingEmail(email);
+        } else if (error.message.includes('Invalid login')) {
           toast.error('Email ou mot de passe incorrect');
         } else {
           toast.error(error.message);

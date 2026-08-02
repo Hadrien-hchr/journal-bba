@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Shield, User, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
+import { EmailVerificationPending } from '@/components/auth/EmailVerificationPending';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoJ from '@/assets/logo-j.jpeg';
 

@@ -33,16 +33,23 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       }
     }
 
+    const redirectTo = `${window.location.origin}/reset-password`;
+
     try {
       const { error } = await supabase.functions.invoke('send-auth-email', {
-        body: {
-          email,
-          redirectTo: `${window.location.origin}/reset-password`,
-        },
+        body: { email, redirectTo },
       });
 
       if (error) {
-        toast.error('Une erreur est survenue');
+        // Fallback: built-in password recovery email
+        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo,
+        });
+        if (fallbackError) {
+          toast.error('Une erreur est survenue');
+        } else {
+          setIsSuccess(true);
+        }
       } else {
         setIsSuccess(true);
       }

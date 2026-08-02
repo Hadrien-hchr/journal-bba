@@ -116,7 +116,12 @@ export default function Auth() {
 
     const { error } = await signInAsAdmin(email, password);
     if (error) {
-      toast.error(error.message);
+      if (error.message.toLowerCase().includes('email not confirmed')) {
+        toast.error('Veuillez vérifier votre adresse email avant de vous connecter.');
+        setPendingEmail(email);
+      } else {
+        toast.error(error.message);
+      }
     } else {
       toast.success('Connexion administrateur réussie !');
       navigate('/');

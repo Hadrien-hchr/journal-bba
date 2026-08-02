@@ -138,6 +138,28 @@ export default function Auth() {
     );
   }
 
+  if (pendingEmail) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative overflow-hidden">
+        <div className="absolute inset-0 dot-pattern opacity-50" />
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-primary/5 blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="relative z-10 mb-8 text-center">
+          <h1 className="text-4xl font-display font-bold text-gradient mb-2">Journal BBA</h1>
+          <p className="text-muted-foreground">EM Lyon Business School</p>
+        </div>
+        <div className="w-full max-w-md relative z-10">
+          <EmailVerificationPending
+            email={pendingEmail}
+            onBack={() => {
+              setPendingEmail(null);
+              setIsSignUp(false);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (showForgotPassword) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative overflow-hidden">

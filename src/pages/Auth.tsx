@@ -28,6 +28,7 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +40,17 @@ export default function Auth() {
       navigate('/');
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    const isRecoveryHash = hashParams.get('type') === 'recovery';
+    const isRecoveryQuery = queryParams.get('type') === 'recovery';
+
+    if (isRecoveryHash || isRecoveryQuery) {
+      setIsRecoveryMode(true);
+    }
+  }, []);
 
   const handleUserAuth = async (e: React.FormEvent) => {
     e.preventDefault();

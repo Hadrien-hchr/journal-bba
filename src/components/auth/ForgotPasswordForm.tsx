@@ -25,6 +25,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
     setIsSubmitting(true);
 
     const normalizedEmail = email.trim().toLowerCase();
+    setSubmittedEmail(normalizedEmail);
 
     try {
       emailSchema.parse(normalizedEmail);

@@ -23,8 +23,10 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
     e.preventDefault();
     setIsSubmitting(true);
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
-      emailSchema.parse(email);
+      emailSchema.parse(normalizedEmail);
     } catch (err) {
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
@@ -33,20 +35,20 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       }
     }
 
-    const redirectTo = `${window.location.origin}/reset-password`;
+    const redirectTo = `${window.location.origin}/auth?type=recovery`;
 
     try {
       const { error } = await supabase.functions.invoke('send-auth-email', {
-        body: { email, redirectTo },
+        body: { email: normalizedEmail, redirectTo },
       });
 
       if (error) {
         // Fallback: built-in password recovery email
-        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
           redirectTo,
         });
         if (fallbackError) {
-          toast.error('Une erreur est survenue');
+          toast.error(fallbackError.message);
         } else {
           setIsSuccess(true);
         }

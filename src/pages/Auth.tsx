@@ -36,10 +36,10 @@ export default function Auth() {
   const [lastName, setLastName] = useState('');
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !loading && !isRecoveryMode) {
       navigate('/');
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, isRecoveryMode, navigate]);
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));

@@ -16,6 +16,7 @@ interface ForgotPasswordFormProps {
 
 export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
   const [email, setEmail] = useState('');
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 

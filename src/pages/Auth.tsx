@@ -11,6 +11,7 @@ import { Shield, User, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { z } from 'zod';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { EmailVerificationPending } from '@/components/auth/EmailVerificationPending';
+import ResetPassword from '@/pages/ResetPassword';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoJ from '@/assets/logo-j.jpeg';
 
@@ -27,6 +28,7 @@ export default function Auth() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,10 +36,21 @@ export default function Auth() {
   const [lastName, setLastName] = useState('');
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !loading && !isRecoveryMode) {
       navigate('/');
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, isRecoveryMode, navigate]);
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
+    const isRecoveryHash = hashParams.get('type') === 'recovery';
+    const isRecoveryQuery = queryParams.get('type') === 'recovery';
+
+    if (isRecoveryHash || isRecoveryQuery) {
+      setIsRecoveryMode(true);
+    }
+  }, []);
 
   const handleUserAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,6 +149,10 @@ export default function Auth() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (isRecoveryMode) {
+    return <ResetPassword />;
   }
 
   if (pendingEmail) {

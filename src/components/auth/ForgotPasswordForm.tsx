@@ -16,6 +16,7 @@ interface ForgotPasswordFormProps {
 
 export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
   const [email, setEmail] = useState('');
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -23,8 +24,11 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
     e.preventDefault();
     setIsSubmitting(true);
 
+    const normalizedEmail = email.trim().toLowerCase();
+    setSubmittedEmail(normalizedEmail);
+
     try {
-      emailSchema.parse(email);
+      emailSchema.parse(normalizedEmail);
     } catch (err) {
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
@@ -33,20 +37,20 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       }
     }
 
-    const redirectTo = `${window.location.origin}/reset-password`;
+    const redirectTo = `${window.location.origin}/auth?type=recovery`;
 
     try {
       const { error } = await supabase.functions.invoke('send-auth-email', {
-        body: { email, redirectTo },
+        body: { email: normalizedEmail, redirectTo },
       });
 
       if (error) {
         // Fallback: built-in password recovery email
-        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
           redirectTo,
         });
         if (fallbackError) {
-          toast.error('Une erreur est survenue');
+          toast.error(fallbackError.message);
         } else {
           setIsSuccess(true);
         }
@@ -70,7 +74,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
             </div>
             <h3 className="text-xl font-display font-bold mb-2">Email envoyé !</h3>
             <p className="text-muted-foreground text-sm mb-6">
-              Si un compte existe avec l'adresse <strong>{email}</strong>, 
+              Si un compte existe avec l'adresse <strong>{submittedEmail}</strong>, 
               vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.
             </p>
             <Button variant="outline" onClick={onBack}>

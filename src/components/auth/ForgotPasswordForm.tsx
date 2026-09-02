@@ -74,7 +74,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
             </div>
             <h3 className="text-xl font-display font-bold mb-2">Email envoyé !</h3>
             <p className="text-muted-foreground text-sm mb-6">
-              Si un compte existe avec l'adresse <strong>{email}</strong>, 
+              Si un compte existe avec l'adresse <strong>{submittedEmail}</strong>, 
               vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.
             </p>
             <Button variant="outline" onClick={onBack}>

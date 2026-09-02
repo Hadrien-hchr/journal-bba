@@ -151,6 +151,10 @@ export default function Auth() {
     );
   }
 
+  if (isRecoveryMode) {
+    return <ResetPassword />;
+  }
+
   if (pendingEmail) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative overflow-hidden">

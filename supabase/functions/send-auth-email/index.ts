@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     )
 
     const { error: sendError } = await resend.emails.send({
-      from: 'Journal BBA <onboarding@resend.dev>',
+      from: 'Journal BBA <contact@journal-bba.com>',
       to: [email],
       subject: 'Réinitialisez votre mot de passe - Journal BBA',
       html,

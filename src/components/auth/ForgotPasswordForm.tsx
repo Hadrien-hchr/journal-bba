@@ -41,24 +41,20 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       }
     }
 
-    const redirectTo = `${window.location.origin}/auth?type=recovery`;
+    const redirectTo = 'https://journal-bba.com/auth?type=recovery';
 
     try {
-      const { error } = await supabase.functions.invoke('send-auth-email', {
+      const { data, error } = await supabase.functions.invoke('send-auth-email', {
         body: { email: normalizedEmail, redirectTo },
       });
 
       if (error) {
-        // Fallback: built-in password recovery email
-        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-          redirectTo,
-        });
-        if (fallbackError) {
-          setError(fallbackError.message);
-          toast.error(fallbackError.message);
-        } else {
-          setIsSuccess(true);
-        }
+        const message = error.message || 'Une erreur est survenue';
+        setError(message);
+        toast.error(message);
+      } else if (data?.error) {
+        setError(data.error);
+        toast.error(data.error);
       } else {
         setIsSuccess(true);
       }

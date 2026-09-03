@@ -47,10 +47,16 @@ Deno.serve(async (req) => {
 
     if (linkError) {
       console.error('Error generating reset link:', linkError)
-      // Don't reveal if the email exists or not
+      // User not found: don't reveal if the email exists or not
+      if (linkError.message?.toLowerCase().includes('user not found')) {
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        )
+      }
       return new Response(
-        JSON.stringify({ success: true }),
-        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        JSON.stringify({ error: `Erreur de génération du lien : ${linkError.message}` }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       )
     }
 
@@ -72,7 +78,24 @@ Deno.serve(async (req) => {
 
     if (sendError) {
       console.error('Resend error:', sendError)
-      throw sendError
+      // Resend 403: the test domain onboarding@resend.dev only delivers to the account owner
+      if (
+        sendError.statusCode === 403 ||
+        sendError.message?.includes('verify a domain') ||
+        sendError.message?.includes('testing emails')
+      ) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "En mode test Resend, vous devez d'abord ajouter votre domaine sur resend.com/domains pour écrire à tous les étudiants.",
+          }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        )
+      }
+      return new Response(
+        JSON.stringify({ error: `Erreur Resend : ${sendError.message}` }),
+        { status: sendError.statusCode ?? 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
     }
 
     console.log(`Password reset email sent to ${email}`)
@@ -83,8 +106,9 @@ Deno.serve(async (req) => {
     )
   } catch (error) {
     console.error('Error:', error)
+    const message = error instanceof Error ? error.message : String(error)
     return new Response(
-      JSON.stringify({ error: 'Failed to send email' }),
+      JSON.stringify({ error: `Échec de l'envoi de l'email : ${message}` }),
       { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     )
   }

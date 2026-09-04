@@ -60,12 +60,13 @@ Deno.serve(async (req) => {
       )
     }
 
-    const resetLink = data.properties.action_link
-    const cleanResetLink = resetLink.replaceAll('journal-bba.lovable.app', 'journal-bba.com')
+    const hashedToken = data.properties.hashed_token
+
+    const directResetLink = 'https://journal-bba.com/auth?token_hash=' + hashedToken + '&type=recovery'
 
     const html = await renderAsync(
       React.createElement(PasswordResetEmail, {
-        resetLink: cleanResetLink,
+        resetLink: directResetLink,
         userName: data.user?.user_metadata?.full_name,
       })
     )

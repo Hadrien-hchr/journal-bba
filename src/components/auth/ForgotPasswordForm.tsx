@@ -41,7 +41,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       }
     }
 
-    const redirectTo = 'https://journal-bba.com/auth?view=reset-password';
+    const redirectTo = 'https://journal-bba.com/auth';
 
     try {
       const { data, error } = await supabase.functions.invoke('send-auth-email', {

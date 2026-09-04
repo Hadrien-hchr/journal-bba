@@ -14,6 +14,7 @@ import { EmailVerificationPending } from '@/components/auth/EmailVerificationPen
 import ResetPassword from '@/pages/ResetPassword';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoJ from '@/assets/logo-j.jpeg';
+import { supabase } from '@/integrations/supabase/client';
 
 const emailSchema = z.string().email('Email invalide');
 const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
@@ -46,10 +47,19 @@ export default function Auth() {
     const queryParams = new URLSearchParams(window.location.search);
     const isRecoveryHash = hashParams.get('type') === 'recovery';
     const isRecoveryQuery = queryParams.get('type') === 'recovery';
+    const isResetView = queryParams.get('view') === 'reset-password';
 
-    if (isRecoveryHash || isRecoveryQuery) {
+    if (isRecoveryHash || isRecoveryQuery || isResetView) {
       setIsRecoveryMode(true);
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveryMode(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleUserAuth = async (e: React.FormEvent) => {

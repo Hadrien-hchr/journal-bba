@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       type: 'recovery',
       email,
       options: {
-        redirectTo,
+        redirectTo: 'https://journal-bba.com/auth?view=reset-password',
       },
     })
 

@@ -61,10 +61,11 @@ Deno.serve(async (req) => {
     }
 
     const resetLink = data.properties.action_link
+    const cleanResetLink = resetLink.replaceAll('journal-bba.lovable.app', 'journal-bba.com')
 
     const html = await renderAsync(
       React.createElement(PasswordResetEmail, {
-        resetLink,
+        resetLink: cleanResetLink,
         userName: data.user?.user_metadata?.full_name,
       })
     )

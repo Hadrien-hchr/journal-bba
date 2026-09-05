@@ -11,7 +11,7 @@ import { Shield, User, Eye, EyeOff, Loader2, ArrowRight, Lock, CheckCircle } fro
 import { z } from 'zod';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { EmailVerificationPending } from '@/components/auth/EmailVerificationPending';
-import ResetPassword from '@/pages/ResetPassword';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import logoJ from '@/assets/logo-j.jpeg';
 import { supabase } from '@/integrations/supabase/client';

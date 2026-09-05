@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -7,11 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, User, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { Shield, User, Eye, EyeOff, Loader2, ArrowRight, Lock, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { EmailVerificationPending } from '@/components/auth/EmailVerificationPending';
-import ResetPassword from '@/pages/ResetPassword';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import logoJ from '@/assets/logo-j.jpeg';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,14 +30,27 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<'idle' | 'verifying' | 'form' | 'invalid'>('idle');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
 
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  const verifyingRef = useRef(false);
+  const passwordRecoveryReceived = useRef(false);
+
   useEffect(() => {
-    if (user && !loading && !isRecoveryMode) {
+    const isRecoveryUrl = window.location.search.includes('type=recovery') ||
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('view=reset-password');
+    if (user && !loading && !isRecoveryMode && !isRecoveryUrl) {
       navigate('/');
     }
   }, [user, loading, isRecoveryMode, navigate]);
@@ -45,6 +58,8 @@ export default function Auth() {
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
+    const tokenHash = queryParams.get('token_hash') || hashParams.get('token_hash') || null;
+    const type = queryParams.get('type') || hashParams.get('type') || null;
     const isRecoveryHash = hashParams.get('type') === 'recovery';
     const isRecoveryQuery = queryParams.get('type') === 'recovery';
     const isResetView = queryParams.get('view') === 'reset-password';
@@ -53,9 +68,47 @@ export default function Auth() {
       setIsRecoveryMode(true);
     }
 
+    if (tokenHash && type === 'recovery') {
+      setRecoveryStep('verifying');
+
+      const verify = async () => {
+        if (verifyingRef.current) return;
+        verifyingRef.current = true;
+
+        try {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          });
+
+          if (error) {
+            console.error('verifyOtp error:', error);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session || passwordRecoveryReceived.current) {
+              setRecoveryStep('form');
+            } else {
+              setRecoveryStep('invalid');
+            }
+          } else {
+            setRecoveryStep('form');
+          }
+        } catch (err) {
+          console.error('verifyOtp exception:', err);
+          const { data: { session } } = await supabase.auth.getSession();
+          setRecoveryStep(session || passwordRecoveryReceived.current ? 'form' : 'invalid');
+        }
+      };
+
+      verify();
+    } else if (isResetView) {
+      setRecoveryStep('form');
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
+        passwordRecoveryReceived.current = true;
         setIsRecoveryMode(true);
+        setRecoveryStep('form');
       }
     });
 
@@ -153,6 +206,43 @@ export default function Auth() {
     setIsSubmitting(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResetting(true);
+
+    try {
+      passwordSchema.parse(newPassword);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        setIsResetting(false);
+        return;
+      }
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error('Les mots de passe ne correspondent pas');
+      setIsResetting(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        toast.error(error.message || 'Impossible de mettre à jour le mot de passe.');
+      } else {
+        toast.success('Mot de passe modifié avec succès !');
+        setResetSuccess(true);
+        setTimeout(() => navigate('/'), 1500);
+      }
+    } catch (error) {
+      toast.error('Une erreur est survenue lors de la mise à jour du mot de passe.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -161,8 +251,129 @@ export default function Auth() {
     );
   }
 
-  if (isRecoveryMode) {
-    return <ResetPassword />;
+  if (recoveryStep === 'verifying') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (recoveryStep === 'invalid') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md shadow-medium border-0">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center py-6">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <Lock className="h-8 w-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-display font-bold mb-2">Lien invalide</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Ce lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien.
+              </p>
+              <Button onClick={() => navigate('/auth')}>
+                Retour à la connexion
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (recoveryStep === 'form' || resetSuccess) {
+    if (resetSuccess) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md shadow-medium border-0 animate-scale-in">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center py-6">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-display font-bold mb-2">Mot de passe modifié !</h3>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Votre mot de passe a été mis à jour avec succès.
+                </p>
+                <Button className="gradient-red shadow-red" onClick={() => navigate('/')}>
+                  Continuer vers l'application
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <div className="mb-8 text-center animate-fade-in">
+          <h1 className="text-4xl font-display font-bold text-gradient mb-2">
+            Journal BBA
+          </h1>
+        </div>
+
+        <Card className="w-full max-w-md shadow-medium border-0 animate-slide-up">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full gradient-red flex items-center justify-center mb-4">
+              <Lock className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <CardTitle className="text-2xl font-display">Nouveau mot de passe</CardTitle>
+            <CardDescription>
+              Choisissez un nouveau mot de passe sécurisé
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">Confirmer le mot de passe</Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full gradient-red shadow-red"
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Mettre à jour le mot de passe
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (pendingEmail) {

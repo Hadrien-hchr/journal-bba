@@ -11,6 +11,15 @@ import { z } from 'zod';
 
 const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
 
+function getRecoveryParams() {
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const queryParams = new URLSearchParams(window.location.search);
+  return {
+    tokenHash: queryParams.get('token_hash') || hashParams.get('token_hash') || null,
+    type: queryParams.get('type') || hashParams.get('type') || null,
+  };
+}
+
 export default function ResetPassword() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
@@ -20,22 +29,48 @@ export default function ResetPassword() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user has a valid recovery session
-    const checkSession = async () => {
+    const verifyRecoverySession = async () => {
+      const { tokenHash, type } = getRecoveryParams();
+
+      // Explicit OTP verification when the recovery link carries a token_hash
+      if (tokenHash && type === 'recovery') {
+        try {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          });
+
+          if (error) {
+            console.error('verifyOtp error:', error);
+            setSessionError(error.message || 'Le lien de réinitialisation est invalide ou a expiré.');
+            setIsValidSession(false);
+          } else {
+            setIsValidSession(true);
+          }
+          setIsLoading(false);
+          return;
+        } catch (err) {
+          console.error('verifyOtp exception:', err);
+          setSessionError('Une erreur est survenue lors de la vérification du lien.');
+          setIsValidSession(false);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Fallback: rely on an existing recovery session
       const { data: { session } } = await supabase.auth.getSession();
-      
-      // If there's a session, the user clicked the reset link
       if (session) {
         setIsValidSession(true);
       }
       setIsLoading(false);
     };
 
-    checkSession();
+    verifyRecoverySession();
 
-    // Listen for auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsValidSession(true);
@@ -70,12 +105,14 @@ export default function ResetPassword() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        toast.error(error.message);
+        toast.error(error.message || 'Impossible de mettre à jour le mot de passe.');
       } else {
+        toast.success('Mot de passe modifié avec succès !');
         setIsSuccess(true);
+        setTimeout(() => navigate('/'), 1500);
       }
     } catch (error) {
-      toast.error('Une erreur est survenue');
+      toast.error('Une erreur est survenue lors de la mise à jour du mot de passe.');
     } finally {
       setIsSubmitting(false);
     }
@@ -99,9 +136,8 @@ export default function ResetPassword() {
                 <Lock className="h-8 w-8 text-destructive" />
               </div>
               <h3 className="text-xl font-display font-bold mb-2">Lien invalide</h3>
-              <p className="text-muted-foreground text-sm mb-6">
-                Ce lien de réinitialisation est invalide ou a expiré. 
-                Veuillez demander un nouveau lien.
+              <p className="text-muted-foreground text-sm mb-4">
+                {sessionError || "Ce lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien."}
               </p>
               <Button onClick={() => navigate('/auth')}>
                 Retour à la connexion

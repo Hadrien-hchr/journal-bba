@@ -55,6 +55,8 @@ export default function Auth() {
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
+    const tokenHash = queryParams.get('token_hash') || hashParams.get('token_hash') || null;
+    const type = queryParams.get('type') || hashParams.get('type') || null;
     const isRecoveryHash = hashParams.get('type') === 'recovery';
     const isRecoveryQuery = queryParams.get('type') === 'recovery';
     const isResetView = queryParams.get('view') === 'reset-password';
@@ -63,9 +65,47 @@ export default function Auth() {
       setIsRecoveryMode(true);
     }
 
+    if (tokenHash && type === 'recovery') {
+      setRecoveryStep('verifying');
+
+      const verify = async () => {
+        if (verifyingRef.current) return;
+        verifyingRef.current = true;
+
+        try {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          });
+
+          if (error) {
+            console.error('verifyOtp error:', error);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session || passwordRecoveryReceived.current) {
+              setRecoveryStep('form');
+            } else {
+              setRecoveryStep('invalid');
+            }
+          } else {
+            setRecoveryStep('form');
+          }
+        } catch (err) {
+          console.error('verifyOtp exception:', err);
+          const { data: { session } } = await supabase.auth.getSession();
+          setRecoveryStep(session || passwordRecoveryReceived.current ? 'form' : 'invalid');
+        }
+      };
+
+      verify();
+    } else if (isResetView) {
+      setRecoveryStep('form');
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
+        passwordRecoveryReceived.current = true;
         setIsRecoveryMode(true);
+        setRecoveryStep('form');
       }
     });
 

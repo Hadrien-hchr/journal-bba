@@ -203,6 +203,43 @@ export default function Auth() {
     setIsSubmitting(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsResetting(true);
+
+    try {
+      passwordSchema.parse(newPassword);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        setIsResetting(false);
+        return;
+      }
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error('Les mots de passe ne correspondent pas');
+      setIsResetting(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        toast.error(error.message || 'Impossible de mettre à jour le mot de passe.');
+      } else {
+        toast.success('Mot de passe modifié avec succès !');
+        setResetSuccess(true);
+        setTimeout(() => navigate('/'), 1500);
+      }
+    } catch (error) {
+      toast.error('Une erreur est survenue lors de la mise à jour du mot de passe.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

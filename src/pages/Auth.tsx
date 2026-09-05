@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Shield, User, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { Shield, User, Eye, EyeOff, Loader2, ArrowRight, Lock, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { EmailVerificationPending } from '@/components/auth/EmailVerificationPending';

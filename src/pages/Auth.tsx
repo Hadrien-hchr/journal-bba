@@ -30,11 +30,21 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<'idle' | 'verifying' | 'form' | 'invalid'>('idle');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  const verifyingRef = useRef(false);
+  const passwordRecoveryReceived = useRef(false);
 
   useEffect(() => {
     if (user && !loading && !isRecoveryMode) {

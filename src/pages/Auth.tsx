@@ -47,7 +47,10 @@ export default function Auth() {
   const passwordRecoveryReceived = useRef(false);
 
   useEffect(() => {
-    if (user && !loading && !isRecoveryMode) {
+    const isRecoveryUrl = window.location.search.includes('type=recovery') ||
+      window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('view=reset-password');
+    if (user && !loading && !isRecoveryMode && !isRecoveryUrl) {
       navigate('/');
     }
   }, [user, loading, isRecoveryMode, navigate]);

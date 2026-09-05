@@ -248,8 +248,129 @@ export default function Auth() {
     );
   }
 
-  if (isRecoveryMode) {
-    return <ResetPassword />;
+  if (recoveryStep === 'verifying') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (recoveryStep === 'invalid') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md shadow-medium border-0">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center py-6">
+              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+                <Lock className="h-8 w-8 text-destructive" />
+              </div>
+              <h3 className="text-xl font-display font-bold mb-2">Lien invalide</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Ce lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien.
+              </p>
+              <Button onClick={() => navigate('/auth')}>
+                Retour à la connexion
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (recoveryStep === 'form' || resetSuccess) {
+    if (resetSuccess) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md shadow-medium border-0 animate-scale-in">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center py-6">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-display font-bold mb-2">Mot de passe modifié !</h3>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Votre mot de passe a été mis à jour avec succès.
+                </p>
+                <Button className="gradient-red shadow-red" onClick={() => navigate('/')}>
+                  Continuer vers l'application
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <div className="mb-8 text-center animate-fade-in">
+          <h1 className="text-4xl font-display font-bold text-gradient mb-2">
+            Journal BBA
+          </h1>
+        </div>
+
+        <Card className="w-full max-w-md shadow-medium border-0 animate-slide-up">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full gradient-red flex items-center justify-center mb-4">
+              <Lock className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <CardTitle className="text-2xl font-display">Nouveau mot de passe</CardTitle>
+            <CardDescription>
+              Choisissez un nouveau mot de passe sécurisé
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">Confirmer le mot de passe</Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full gradient-red shadow-red"
+                disabled={isResetting}
+              >
+                {isResetting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Mettre à jour le mot de passe
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (pendingEmail) {

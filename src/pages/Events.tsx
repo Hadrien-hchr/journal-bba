@@ -11,8 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Euro, Ticket, Loader2, PartyPopper, CalendarDays, X, ImageIcon, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -23,15 +24,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
 const IMAGE_SIZE_OPTIONS = [
-  { value: 'small', label: 'Petite', aspectClass: 'aspect-video max-h-32' },
-  { value: 'medium', label: 'Moyenne', aspectClass: 'aspect-video max-h-48' },
-  { value: 'large', label: 'Grande', aspectClass: 'aspect-video' },
+  { value: 'small', aspectClass: 'aspect-video max-h-32' },
+  { value: 'medium', aspectClass: 'aspect-video max-h-48' },
+  { value: 'large', aspectClass: 'aspect-video' },
 ] as const;
 
 // Dynamic associations list from database
 
 
 export default function Events() {
+  const { t, i18n } = useTranslation('events');
+  const dateLocale = i18n.language.startsWith('fr') ? fr : enUS;
+  const IMAGE_SIZE_LABELS: Record<string, string> = {
+    small: t('form.imageSizeSmall'),
+    medium: t('form.imageSizeMedium'),
+    large: t('form.imageSizeLarge'),
+  };
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
   const { events, isLoading } = useEvents();
@@ -47,14 +55,14 @@ export default function Events() {
     (associations || []).map((a) => a.name), 
     [associations]
   );
-  const FILTER_ASSOCIATIONS = useMemo(() => ['Tous', ...ASSOCIATIONS_LIST], [ASSOCIATIONS_LIST]);
+  const FILTER_ASSOCIATIONS = useMemo(() => [t('filters.all'), ...ASSOCIATIONS_LIST], [ASSOCIATIONS_LIST, t]);
 
   // Manage sections dialog
   const [isSectionsDialogOpen, setIsSectionsDialogOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedAssociation, setSelectedAssociation] = useState('Tous');
+  const [selectedAssociation, setSelectedAssociation] = useState(t('filters.all'));
   
   const [editingPhotoLink, setEditingPhotoLink] = useState<string | null>(null);
   const [photoLinkValue, setPhotoLinkValue] = useState('');
@@ -145,7 +153,7 @@ export default function Events() {
         triggerPush('event', formData.title, '/events').catch(console.error);
       }
 
-      toast.success('Événement créé avec succès !');
+      toast.success(t('toasts.createSuccess'));
       setIsDialogOpen(false);
       setFormData({
         title: '',
@@ -161,28 +169,28 @@ export default function Events() {
       setSelectedAssociations([]);
       setAssociationInput('');
     } catch (error) {
-      toast.error('Erreur lors de la création de l\'événement');
+      toast.error(t('toasts.createError'));
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteEvent.mutateAsync(id);
-      toast.success('Événement supprimé');
+      toast.success(t('toasts.deleteSuccess'));
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('toasts.deleteError'));
     }
   };
 
   const handleSubscriptionToggle = async (eventId: string, eventTitle: string) => {
     if (!user) {
-      toast.error('Connectez-vous pour vous abonner aux événements');
+      toast.error(t('toasts.loginRequired'));
       return;
     }
     try {
       await toggleSubscription.mutateAsync({ eventId, eventTitle });
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('toasts.updateError'));
     }
   };
 
@@ -192,18 +200,18 @@ export default function Events() {
         id: eventId,
         photo_link: photoLinkValue || null,
       });
-      toast.success('Lien photos enregistré');
+      toast.success(t('toasts.photoLinkSaved'));
       setEditingPhotoLink(null);
       setPhotoLinkValue('');
     } catch (error) {
-      toast.error('Erreur lors de l\'enregistrement');
+      toast.error(t('toasts.photoLinkSaveError'));
     }
   };
   const handleAddSection = async () => {
     const name = newSectionName.trim();
     if (!name) return;
     if (ASSOCIATIONS_LIST.some((a) => a.toLowerCase() === name.toLowerCase())) {
-      toast.error('Cette section existe déjà');
+      toast.error(t('manageSections.alreadyExists'));
       return;
     }
     try {
@@ -211,9 +219,9 @@ export default function Events() {
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['associations'] });
       setNewSectionName('');
-      toast.success(`Section "${name}" ajoutée`);
+      toast.success(t('manageSections.added', { name }));
     } catch {
-      toast.error("Erreur lors de l'ajout");
+      toast.error(t('manageSections.addError'));
     }
   };
 
@@ -224,10 +232,10 @@ export default function Events() {
       const { error } = await supabase.from('associations').delete().eq('id', assoc.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['associations'] });
-      if (selectedAssociation === name) setSelectedAssociation('Tous');
-      toast.success(`Section "${name}" supprimée`);
+      if (selectedAssociation === name) setSelectedAssociation(t('filters.all'));
+      toast.success(t('manageSections.deleted', { name }));
     } catch {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('manageSections.deleteError'));
     }
   };
 
@@ -237,7 +245,7 @@ export default function Events() {
     
     // Filter by association
     let filtered = events.filter((event) => {
-      if (selectedAssociation === 'Tous') return true;
+      if (selectedAssociation === t('filters.all')) return true;
       const eventAssocName = event.custom_association_name || event.associations?.name || '';
       // Check if any of the associations match (comma-separated)
       const assocList = eventAssocName.split(',').map((a) => a.trim());
@@ -280,8 +288,8 @@ export default function Events() {
     <div className="p-4 space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-display font-bold">Événements</h2>
-          <p className="text-muted-foreground text-sm">Découvrez les prochains événements</p>
+          <h2 className="text-2xl font-display font-bold">{t('title')}</h2>
+          <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
         </div>
         
         {isAdmin && (
@@ -289,16 +297,16 @@ export default function Events() {
             <DialogTrigger asChild>
               <Button className="gradient-red shadow-red">
                 <Plus className="h-4 w-4 mr-2" />
-                Ajouter
+                {t('add')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="font-display">Nouvel événement</DialogTitle>
+                <DialogTitle className="font-display">{t('newEvent')}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Titre *</Label>
+                  <Label htmlFor="title">{t('form.titleLabel')}</Label>
                   <Input
                     id="title"
                     value={formData.title}
@@ -308,7 +316,7 @@ export default function Events() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('form.descriptionLabel')}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
@@ -318,7 +326,7 @@ export default function Events() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Associations</Label>
+                  <Label>{t('form.associationsLabel')}</Label>
                   <div className="relative">
                     {/* Selected associations as badges */}
                     <div className="flex flex-wrap gap-1 mb-2">
@@ -347,7 +355,7 @@ export default function Events() {
                       onFocus={() => setShowSuggestions(true)}
                       onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                       onKeyDown={handleInputKeyDown}
-                      placeholder="Tapez une association et appuyez sur Entrée..."
+                      placeholder={t('form.associationsPlaceholder')}
                     />
                     
                     {/* Suggestions dropdown */}
@@ -367,44 +375,44 @@ export default function Events() {
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Vous pouvez ajouter plusieurs associations
+                    {t('form.associationsHint')}
                   </p>
                 </div>
                 
                 <FileUploadInput
-                  label="Image de l'événement"
+                  label={t('form.imageLabel')}
                   value={formData.image_url}
                   onChange={(url) => setFormData({ ...formData, image_url: url })}
                   folder="events"
                 />
                 
                 <div className="space-y-2">
-                  <Label>Taille de l'image</Label>
+                  <Label>{t('form.imageSizeLabel')}</Label>
                   <Select
                     value={formData.image_size}
                     onValueChange={(value: 'small' | 'medium' | 'large') => setFormData({ ...formData, image_size: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choisir la taille" />
+                      <SelectValue placeholder={t('form.imageSizePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {IMAGE_SIZE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           <div className="flex items-center gap-2">
                             <ImageIcon className="h-4 w-4" />
-                            {option.label}
+                            {IMAGE_SIZE_LABELS[option.value]}
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Contrôle la taille d'affichage de l'image dans la liste
+                    {t('form.imageSizeHint')}
                   </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="event_date">Date de l'événement *</Label>
+                  <Label htmlFor="event_date">{t('form.eventDateLabel')}</Label>
                   <Input
                     id="event_date"
                     type="datetime-local"
@@ -416,7 +424,7 @@ export default function Events() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Prix (€)</Label>
+                    <Label htmlFor="price">{t('form.priceLabel')}</Label>
                     <Input
                       id="price"
                       type="number"
@@ -428,20 +436,20 @@ export default function Events() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="ticket_link">Lien billetterie</Label>
+                    <Label htmlFor="ticket_link">{t('form.ticketLinkLabel')}</Label>
                     <Input
                       id="ticket_link"
                       type="url"
                       value={formData.ticket_link}
                       onChange={(e) => setFormData({ ...formData, ticket_link: e.target.value })}
-                      placeholder="https://..."
+                      placeholder={t('form.ticketLinkPlaceholder')}
                     />
                   </div>
                 </div>
 
                 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="is_published">Publier immédiatement</Label>
+                  <Label htmlFor="is_published">{t('form.publishNowLabel')}</Label>
                   <Switch
                     id="is_published"
                     checked={formData.is_published}
@@ -451,7 +459,7 @@ export default function Events() {
                 
                 {!formData.is_published && (
                   <div className="space-y-2">
-                    <Label htmlFor="publish_at">Date de publication</Label>
+                    <Label htmlFor="publish_at">{t('form.publishAtLabel')}</Label>
                     <Input
                       id="publish_at"
                       type="datetime-local"
@@ -469,7 +477,7 @@ export default function Events() {
                   {createEvent.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
-                  Créer l'événement
+                  {t('form.submit')}
                 </Button>
               </form>
             </DialogContent>
@@ -503,14 +511,14 @@ export default function Events() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle className="font-display">Gérer les sections</DialogTitle>
+                  <DialogTitle className="font-display">{t('manageSections.title')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="flex gap-2">
                     <Input
                       value={newSectionName}
                       onChange={(e) => setNewSectionName(e.target.value)}
-                      placeholder="Nom de la nouvelle section..."
+                      placeholder={t('manageSections.newSectionPlaceholder')}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddSection()}
                     />
                     <Button onClick={handleAddSection} className="gradient-red shadow-red shrink-0">
@@ -532,7 +540,7 @@ export default function Events() {
                       </div>
                     ))}
                     {ASSOCIATIONS_LIST.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">Aucune section</p>
+                      <p className="text-sm text-muted-foreground text-center py-4">{t('manageSections.empty')}</p>
                     )}
                   </div>
                 </div>
@@ -543,7 +551,7 @@ export default function Events() {
       </div>
 
       {/* Association banner when filtered */}
-      {selectedAssociation !== 'Tous' && (
+      {selectedAssociation !== t('filters.all') && (
         <CollapsibleAssociationBanner associationName={selectedAssociation} />
       )}
 
@@ -552,9 +560,9 @@ export default function Events() {
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <PartyPopper className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {selectedAssociation === 'Tous' 
-                ? 'Aucun événement pour le moment'
-                : `Aucun événement pour ${selectedAssociation}`}
+              {selectedAssociation === t('filters.all') 
+                ? t('empty.none')
+                : t('empty.noneForAssociation', { association: selectedAssociation })}
             </p>
           </CardContent>
         </Card>
@@ -587,7 +595,7 @@ export default function Events() {
                     {isPast && (
                       <div className="absolute inset-0 bg-background/30 flex items-center justify-center">
                         <span className="bg-muted/90 text-muted-foreground px-3 py-1 rounded-full text-sm font-medium">
-                          Événement passé
+                          {t('pastBadge')}
                         </span>
                       </div>
                     )}
@@ -622,7 +630,7 @@ export default function Events() {
                           'h-8 w-8',
                           subscriptions.includes(event.id) && 'text-primary'
                         )}
-                        title={subscriptions.includes(event.id) ? 'Retirer du calendrier' : 'Ajouter au calendrier'}
+                        title={subscriptions.includes(event.id) ? t('removeFromCalendar') : t('addToCalendar')}
                       >
                         <CalendarDays className={cn(
                           'h-5 w-5',
@@ -654,12 +662,12 @@ export default function Events() {
                   <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <CalendarDays className="h-4 w-4 text-primary" />
-                      {format(new Date(event.event_date), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                      {format(new Date(event.event_date), t('dateTimeFormat'), { locale: dateLocale })}
                     </div>
                     {event.price !== null && (
                       <div className="flex items-center gap-1">
                         <Euro className="h-4 w-4 text-primary" />
-                        {event.price === 0 ? 'Gratuit' : `${event.price}€`}
+                        {event.price === 0 ? t('free') : `${event.price}€`}
                       </div>
                     )}
                   </div>
@@ -674,7 +682,7 @@ export default function Events() {
                     >
                       <a href={event.ticket_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                         <Ticket className="h-4 w-4 mr-2" />
-                        Billetterie
+                        {t('ticketing')}
                       </a>
                     </Button>
                   )}
@@ -689,7 +697,7 @@ export default function Events() {
                             <div className="flex gap-2">
                               <Input
                                 type="url"
-                                placeholder="Lien vers les photos..."
+                                placeholder={t('photoLinkPlaceholder')}
                                 value={photoLinkValue}
                                 onChange={(e) => setPhotoLinkValue(e.target.value)}
                                 className="flex-1"
@@ -703,7 +711,7 @@ export default function Events() {
                                 }}
                                 disabled={updateEvent.isPending}
                               >
-                                {updateEvent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enregistrer'}
+                                {updateEvent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('save')}
                               </Button>
                               <Button 
                                 size="sm" 
@@ -714,7 +722,7 @@ export default function Events() {
                                   setPhotoLinkValue('');
                                 }}
                               >
-                                Annuler
+                                {t('cancel')}
                               </Button>
                             </div>
                           ) : (
@@ -729,7 +737,7 @@ export default function Events() {
                               }}
                             >
                               <CalendarDays className="h-4 w-4 mr-2" />
-                              {event.photo_link ? 'Modifier le lien photos' : 'Ajouter un lien photos'}
+                              {event.photo_link ? t('editPhotoLink') : t('addPhotoLink')}
                             </Button>
                           )}
                         </div>
@@ -744,7 +752,7 @@ export default function Events() {
                         >
                           <a href={event.photo_link} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                             <CalendarDays className="h-4 w-4 mr-2" />
-                            Voir les photos
+                            {t('viewPhotos')}
                           </a>
                         </Button>
                       )}

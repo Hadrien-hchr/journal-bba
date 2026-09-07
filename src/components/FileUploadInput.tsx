@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +25,7 @@ export function FileUploadInput({
   accept = 'image/*',
   className,
 }: FileUploadInputProps) {
+  const { t } = useTranslation('content');
   const [mode, setMode] = useState<'upload' | 'url'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, progress } = useFileUpload();
@@ -62,7 +64,7 @@ export function FileUploadInput({
             className="h-7 px-2 text-xs"
           >
             <Upload className="h-3 w-3 mr-1" />
-            Fichier
+            {t('fileUpload.file')}
           </Button>
           <Button
             type="button"
@@ -72,7 +74,7 @@ export function FileUploadInput({
             className="h-7 px-2 text-xs"
           >
             <Link className="h-3 w-3 mr-1" />
-            URL
+            {t('fileUpload.url')}
           </Button>
         </div>
       </div>
@@ -100,7 +102,7 @@ export function FileUploadInput({
               <div className="flex flex-col items-center justify-center pt-2 pb-3">
                 <Upload className="h-6 w-6 text-muted-foreground mb-1" />
                 <p className="text-xs text-muted-foreground">
-                  Cliquez pour télécharger
+                  {t('fileUpload.clickToUpload')}
                 </p>
               </div>
             </label>
@@ -133,7 +135,7 @@ export function FileUploadInput({
             type="url"
             value={value}
             onChange={handleUrlChange}
-            placeholder="https://..."
+            placeholder={t('fileUpload.urlPlaceholder')}
             className="flex-1"
           />
           {value && (

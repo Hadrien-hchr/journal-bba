@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useProfile, useUpdateProfile } from '@/hooks/useFriends';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,7 @@ import { toast } from 'sonner';
 
 export function CompleteProfileModal() {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const { data: profile, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   
@@ -38,7 +40,7 @@ export function CompleteProfileModal() {
     e.preventDefault();
     
     if (!firstName.trim() || !lastName.trim()) {
-      toast.error('Veuillez remplir tous les champs');
+      toast.error(t('validation.fillAllFields'));
       return;
     }
 
@@ -50,10 +52,10 @@ export function CompleteProfileModal() {
         profile_completed: true,
       });
       
-      toast.success('Profil complété !');
+      toast.success(t('success.profileCompleted'));
       setIsOpen(false);
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour du profil');
+      toast.error(t('errors.profileUpdateError'));
     }
   };
 
@@ -67,19 +69,19 @@ export function CompleteProfileModal() {
             <User className="h-6 w-6 text-primary-foreground" />
           </div>
           <DialogTitle className="text-center text-xl font-display">
-            Bienvenue sur Journal BBA !
+            {t('completeProfile.welcomeTitle')}
           </DialogTitle>
           <DialogDescription className="text-center">
-            Pour commencer, complétez votre profil
+            {t('completeProfile.description')}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="firstName">Prénom</Label>
+            <Label htmlFor="firstName">{t('completeProfile.firstNameLabel')}</Label>
             <Input
               id="firstName"
-              placeholder="Jean"
+              placeholder={t('completeProfile.firstNamePlaceholder')}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
@@ -87,10 +89,10 @@ export function CompleteProfileModal() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="lastName">Nom</Label>
+            <Label htmlFor="lastName">{t('completeProfile.lastNameLabel')}</Label>
             <Input
               id="lastName"
-              placeholder="Dupont"
+              placeholder={t('completeProfile.lastNamePlaceholder')}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
@@ -105,7 +107,7 @@ export function CompleteProfileModal() {
             {updateProfile.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : null}
-            Continuer
+            {t('completeProfile.continue')}
           </Button>
         </form>
       </DialogContent>

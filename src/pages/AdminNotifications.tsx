@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotificationTemplates, useUpdateNotificationTemplate, triggerPush, type NotificationTemplate } from '@/hooks/useNotificationTemplates';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,20 +13,15 @@ import { Bell, Save, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
-const LABELS: Record<string, { label: string; hint: string }> = {
-  event: { label: 'Événements', hint: 'Envoyée à la création d\'un événement.' },
-  interview: { label: 'Interviews', hint: 'Envoyée à la publication d\'une interview.' },
-  information: { label: 'EM\'Book / Articles', hint: 'Envoyée à la publication d\'un article.' },
-  home: { label: 'Accueil', hint: 'Envoyée pour les publications du flux d\'accueil.' },
-};
-
 function TemplateCard({ tpl }: { tpl: NotificationTemplate }) {
+  const { t } = useTranslation('account');
   const [title, setTitle] = useState(tpl.title);
   const [message, setMessage] = useState(tpl.message);
   const [enabled, setEnabled] = useState(tpl.enabled);
   const [testing, setTesting] = useState(false);
   const update = useUpdateNotificationTemplate();
-  const meta = LABELS[tpl.category] ?? { label: tpl.category, hint: '' };
+  const meta = (t(`notifications.categories.${tpl.category}`, { returnObjects: true }) as { label: string; hint: string } | string);
+  const metaObj = typeof meta === 'string' ? { label: tpl.category, hint: '' } : meta;
 
   useEffect(() => {
     setTitle(tpl.title); setMessage(tpl.message); setEnabled(tpl.enabled);
@@ -34,7 +30,7 @@ function TemplateCard({ tpl }: { tpl: NotificationTemplate }) {
   const save = async () => {
     try {
       await update.mutateAsync({ id: tpl.id, title, message, enabled });
-      toast.success('Modèle enregistré');
+      toast.success(t('notifications.saveSuccess'));
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -43,10 +39,10 @@ function TemplateCard({ tpl }: { tpl: NotificationTemplate }) {
   const test = async () => {
     setTesting(true);
     try {
-      const { data, error } = await triggerPush(tpl.category, 'Test notification');
+      const { data, error } = await triggerPush(tpl.category, t('notifications.testNotificationTitle'));
       if (error) throw error;
-      if ((data as any)?.ok) toast.success('Notification test envoyée 📲');
-      else toast.error('Erreur OneSignal : ' + JSON.stringify((data as any)?.body));
+      if ((data as any)?.ok) toast.success(t('notifications.testSuccess'));
+      else toast.error(t('notifications.testError', { details: JSON.stringify((data as any)?.body) }));
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -62,33 +58,33 @@ function TemplateCard({ tpl }: { tpl: NotificationTemplate }) {
             <div>
               <CardTitle className="font-display flex items-center gap-2">
                 <Bell className="h-4 w-4 text-primary" />
-                {meta.label}
+                {metaObj.label}
               </CardTitle>
-              <CardDescription className="text-xs">{meta.hint}</CardDescription>
+              <CardDescription className="text-xs">{metaObj.hint}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs">Actif</Label>
+              <Label className="text-xs">{t('notifications.active')}</Label>
               <Switch checked={enabled} onCheckedChange={setEnabled} />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Titre de la notif</Label>
+            <Label className="text-xs">{t('notifications.notifTitleLabel')}</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Message ({'{title}'} = titre du contenu)</Label>
+            <Label className="text-xs">{t('notifications.messageLabel', { placeholder: '{title}' })}</Label>
             <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
           </div>
           <div className="flex gap-2 pt-1">
             <Button onClick={save} disabled={update.isPending} className="gradient-red shadow-red">
               {update.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-              Enregistrer
+              {t('notifications.save')}
             </Button>
             <Button variant="outline" onClick={test} disabled={testing}>
               {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
-              Tester
+              {t('notifications.test')}
             </Button>
           </div>
         </CardContent>
@@ -98,6 +94,7 @@ function TemplateCard({ tpl }: { tpl: NotificationTemplate }) {
 }
 
 export default function AdminNotifications() {
+  const { t } = useTranslation('account');
   const { isAdmin, loading } = useAuth();
   const { data, isLoading } = useNotificationTemplates();
 
@@ -109,8 +106,8 @@ export default function AdminNotifications() {
   return (
     <div className="container max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-display font-bold text-gradient">Gestion des notifications</h1>
-        <p className="text-muted-foreground text-sm mt-1">Personnalise les messages push envoyés via OneSignal.</p>
+        <h1 className="text-3xl font-display font-bold text-gradient">{t('notifications.title')}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t('notifications.subtitle')}</p>
       </div>
       <div className="space-y-4">
         {(data ?? []).map((t) => <TemplateCard key={t.id} tpl={t} />)}

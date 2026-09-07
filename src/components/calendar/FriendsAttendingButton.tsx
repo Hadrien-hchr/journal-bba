@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Users, Loader2 } from 'lucide-react';
 import { Profile } from '@/hooks/useFriends';
+import { useTranslation } from 'react-i18next';
 
 interface FriendsAttendingButtonProps {
   eventId: string;
@@ -12,13 +13,14 @@ interface FriendsAttendingButtonProps {
 }
 
 export function FriendsAttendingButton({ eventId, eventTitle }: FriendsAttendingButtonProps) {
+  const { t } = useTranslation('events');
   const [isOpen, setIsOpen] = useState(false);
   const { data: friends, isLoading } = useFriendsAttendingEvent(eventId);
 
   const getDisplayName = (p: Profile) => {
     if (p.first_name && p.last_name) return `${p.first_name} ${p.last_name}`;
     if (p.full_name) return p.full_name;
-    return p.email?.split('@')[0] || 'Utilisateur';
+    return p.email?.split('@')[0] || t('friendsAttending.defaultUserName');
   };
 
   const getInitials = (p: Profile) => {
@@ -65,7 +67,7 @@ export function FriendsAttendingButton({ eventId, eventTitle }: FriendsAttending
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display text-lg">
-            Amis qui y vont
+            {t('friendsAttending.title')}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">{eventTitle}</p>
         </DialogHeader>

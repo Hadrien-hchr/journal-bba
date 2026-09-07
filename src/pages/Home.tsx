@@ -1,24 +1,18 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useActivityFeed } from '@/hooks/useActivityFeed';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Bell, ChevronRight, PartyPopper, Newspaper, Video, Sparkles } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 
 const typeConfig = {
-  event: { icon: PartyPopper, label: 'Événement', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
-  article: { icon: Newspaper, label: 'Article', color: 'text-blue-600', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-  interview: { icon: Video, label: 'Interview', color: 'text-violet-600', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
-  home_post: { icon: Sparkles, label: 'Post', color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  event: { icon: PartyPopper, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
+  article: { icon: Newspaper, color: 'text-blue-600', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+  interview: { icon: Video, color: 'text-violet-600', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+  home_post: { icon: Sparkles, color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
 };
-
-function formatRelativeDate(dateStr: string) {
-  const date = new Date(dateStr);
-  if (isToday(date)) return `Aujourd'hui, ${format(date, 'HH:mm')}`;
-  if (isYesterday(date)) return `Hier, ${format(date, 'HH:mm')}`;
-  return format(date, "d MMM yyyy", { locale: fr });
-}
 
 const container = {
   hidden: { opacity: 0 },
@@ -35,7 +29,23 @@ const item = {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('content');
   const { data: items, isLoading } = useActivityFeed();
+  const dateLocale = i18n.language === 'en' ? enUS : fr;
+
+  function formatRelativeDate(dateStr: string) {
+    const date = new Date(dateStr);
+    if (isToday(date)) return t('home.relative.today', { time: format(date, 'HH:mm') });
+    if (isYesterday(date)) return t('home.relative.yesterday', { time: format(date, 'HH:mm') });
+    return format(date, 'd MMM yyyy', { locale: dateLocale });
+  }
+
+  const typeLabels: Record<string, string> = {
+    event: t('home.types.event'),
+    article: t('home.types.article'),
+    interview: t('home.types.interview'),
+    home_post: t('home.types.home_post'),
+  };
 
   if (isLoading) {
     return (
@@ -61,10 +71,10 @@ export default function Home() {
           </div>
           <div>
             <h2 className="text-lg font-display font-bold text-primary-foreground">
-              Fil d'actualité
+              {t('home.title')}
             </h2>
             <p className="text-primary-foreground/75 text-xs">
-              Les dernières nouvelles du campus
+              {t('home.subtitle')}
             </p>
           </div>
         </div>
@@ -74,7 +84,7 @@ export default function Home() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Aucune activité récente</p>
+            <p className="text-muted-foreground">{t('home.empty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -101,7 +111,7 @@ export default function Home() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className={`text-[10px] font-semibold uppercase tracking-wider ${config.color}`}>
-                          {config.label}
+                          {typeLabels[activityItem.type]}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
                           {formatRelativeDate(activityItem.created_at)}

@@ -4,28 +4,30 @@ import { cn } from '@/lib/utils';
 import { useAppSetting } from '@/hooks/useAppSettings';
 import * as LucideIcons from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const staticNavItems = [
-  { path: '/calendar', icon: CalendarDays, label: 'Calendrier' },
-  { path: '/events', icon: PartyPopper, label: 'Événements' },
-  { path: '/', icon: Home, label: 'Accueil' },
+  { path: '/calendar', icon: CalendarDays, labelKey: 'nav.calendar' },
+  { path: '/events', icon: PartyPopper, labelKey: 'nav.events' },
+  { path: '/', icon: Home, labelKey: 'nav.home' },
 ];
 
-const interviewsItem = { path: '/interviews', icon: PlayCircle, label: 'Interviews' };
+const interviewsItem = { path: '/interviews', icon: PlayCircle, labelKey: 'nav.interviews' };
 
 export default function BottomNav() {
   const location = useLocation();
   const { data: infoTabSetting } = useAppSetting('info_tab');
+  const { t } = useTranslation('common');
 
   const tabSettings = infoTabSetting?.value as { name?: string; icon?: string } | undefined;
-  const infoLabel = tabSettings?.name || 'Infos';
+  const infoLabel = tabSettings?.name || t('nav.info');
   const infoIconName = tabSettings?.icon || 'Info';
   const InfoIcon = (LucideIcons as any)[infoIconName] || Info;
 
   const navItems = [
-    ...staticNavItems,
+    ...staticNavItems.map((item) => ({ path: item.path, icon: item.icon, label: t(item.labelKey) })),
     { path: '/info', icon: InfoIcon, label: infoLabel },
-    interviewsItem,
+    { ...interviewsItem, label: t(interviewsItem.labelKey) },
   ];
 
   return (

@@ -1,14 +1,17 @@
 import { useEvents, useUserSubscriptions } from '@/hooks/useEvents';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CalendarDays, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FriendsAttendingButton } from '@/components/calendar/FriendsAttendingButton';
 
 export default function CalendarPage() {
+  const { t, i18n } = useTranslation('events');
+  const dateLocale = i18n.language.startsWith('fr') ? fr : enUS;
   const {
     events,
     isLoading
@@ -59,11 +62,11 @@ export default function CalendarPage() {
   }
   return <div className="p-4 space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-display font-bold">Mon Calendrier</h2>
+        <h2 className="text-2xl font-display font-bold">{t('calendar.title')}</h2>
         <p className="text-muted-foreground text-sm">
-          {selectedDay ? `Événements du ${format(selectedDay, 'd MMMM yyyy', {
-          locale: fr
-        })}` : 'Cliquez sur un jour pour voir les événements'}
+          {selectedDay ? t('calendar.subtitleSelectedDay', { date: format(selectedDay, 'd MMMM yyyy', {
+          locale: dateLocale
+        }) }) : t('calendar.subtitlePrompt')}
         </p>
       </div>
 
@@ -75,7 +78,7 @@ export default function CalendarPage() {
             </Button>
             <CardTitle className="text-lg font-display capitalize">
               {format(currentMonth, 'MMMM yyyy', {
-              locale: fr
+              locale: dateLocale
             })}
             </CardTitle>
             <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
@@ -86,7 +89,7 @@ export default function CalendarPage() {
         <CardContent>
           {/* Day headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+            {(t('calendar.dayLabels', { returnObjects: true }) as string[]).map(day => <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
                 {day}
               </div>)}
           </div>
@@ -122,7 +125,7 @@ export default function CalendarPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-display font-semibold">
               {format(selectedDay, 'EEEE d MMMM', {
-            locale: fr
+            locale: dateLocale
           })}
             </h3>
             <Button variant="ghost" size="icon" onClick={() => setSelectedDay(null)}>
@@ -134,7 +137,7 @@ export default function CalendarPage() {
               <CardContent className="flex flex-col items-center justify-center py-8 text-center">
                 <CalendarDays className="h-10 w-10 text-muted-foreground mb-3" />
                 <p className="text-muted-foreground text-sm">
-                  Aucun événement ce jour
+                  {t('calendar.noEventsThisDay')}
                 </p>
               </CardContent>
             </Card> : <div className="space-y-2">
@@ -146,15 +149,15 @@ export default function CalendarPage() {
                           <div className={cn('flex-shrink-0 w-12 h-12 rounded-lg flex flex-col items-center justify-center text-primary-foreground', isSubscribed ? 'gradient-red' : 'bg-muted')}>
                             <span className={cn('text-xs font-medium uppercase', !isSubscribed && 'text-muted-foreground')}>
                               {format(new Date(event.event_date), 'HH:mm', {
-                      locale: fr
+                      locale: dateLocale
                     })}
                             </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{event.title}</p>
                             <p className="text-sm text-muted-foreground">
-                              {event.custom_association_name || event.associations?.name || 'Événement'}
-                              {isSubscribed && <span className="ml-2 text-xs text-primary">• Dans votre calendrier</span>}
+                              {event.custom_association_name || event.associations?.name || t('calendar.defaultEventName')}
+                              {isSubscribed && <span className="ml-2 text-xs text-primary">• {t('calendar.inYourCalendar')}</span>}
                             </p>
                           </div>
                           <FriendsAttendingButton eventId={event.id} eventTitle={event.title} />
@@ -167,13 +170,13 @@ export default function CalendarPage() {
 
       {/* Upcoming subscribed events (only show when no day selected) */}
       {!selectedDay && <div className="space-y-3">
-          <h3 className="text-lg font-display font-semibold">Mes événements</h3>
+          <h3 className="text-lg font-display font-semibold">{t('calendar.myEvents')}</h3>
           
           {subscribedEvents.length === 0 ? <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-8 text-center">
                 <CalendarDays className="h-10 w-10 text-muted-foreground mb-3" />
                 <p className="text-muted-foreground text-sm">
-                  Cochez des événements pour les ajouter à votre calendrier
+                  {t('calendar.checkEventsPrompt')}
                 </p>
               </CardContent>
             </Card> : <div className="space-y-2">
@@ -183,7 +186,7 @@ export default function CalendarPage() {
                         <div className="flex-shrink-0 w-12 h-12 rounded-lg gradient-red flex flex-col items-center justify-center text-primary-foreground">
                           <span className="text-xs font-medium uppercase">
                             {format(new Date(event.event_date), 'MMM', {
-                    locale: fr
+                    locale: dateLocale
                   })}
                           </span>
                           <span className="text-lg font-bold leading-none">
@@ -194,7 +197,7 @@ export default function CalendarPage() {
                           <p className="font-medium truncate">{event.title}</p>
                           <p className="text-sm text-muted-foreground">
                             {format(new Date(event.event_date), 'HH:mm', {
-                    locale: fr
+                    locale: dateLocale
                   })}
                             {(event.custom_association_name || event.associations?.name) && ` • ${event.custom_association_name || event.associations?.name}`}
                           </p>

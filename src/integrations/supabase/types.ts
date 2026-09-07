@@ -433,6 +433,7 @@ export type Database = {
           first_name: string | null
           full_name: string | null
           id: string
+          language: string
           last_name: string | null
           onesignal_player_id: string | null
           profile_completed: boolean | null
@@ -446,6 +447,7 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           id: string
+          language?: string
           last_name?: string | null
           onesignal_player_id?: string | null
           profile_completed?: boolean | null
@@ -459,6 +461,7 @@ export type Database = {
           first_name?: string | null
           full_name?: string | null
           id?: string
+          language?: string
           last_name?: string | null
           onesignal_player_id?: string | null
           profile_completed?: boolean | null

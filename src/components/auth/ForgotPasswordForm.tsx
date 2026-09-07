@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,13 +9,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-const emailSchema = z.string().email('Email invalide');
-
 interface ForgotPasswordFormProps {
   onBack: () => void;
 }
 
 export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
+  const { t } = useTranslation('auth');
+  const emailSchema = z.string().email(t('validation.invalidEmail'));
   const [email, setEmail] = useState('');
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +50,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       });
 
       if (error) {
-        const message = error.message || 'Une erreur est survenue';
+        const message = error.message || t('errors.genericError');
         setError(message);
         toast.error(message);
       } else if (data?.error) {
@@ -59,7 +60,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         setIsSuccess(true);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Une erreur est survenue';
+      const message = error instanceof Error ? error.message : t('errors.genericError');
       setError(message);
       toast.error(message);
     } finally {
@@ -75,17 +76,20 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <h3 className="text-xl font-display font-bold mb-2">Email envoyé !</h3>
+            <h3 className="text-xl font-display font-bold mb-2">{t('forgotPassword.successTitle')}</h3>
             <p className="text-muted-foreground text-sm mb-2">
-              Si un compte existe avec l'adresse <strong>{submittedEmail}</strong>, 
-              vous recevrez un email avec les instructions pour réinitialiser votre mot de passe.
+              <Trans
+                i18nKey="forgotPassword.successDescription"
+                values={{ email: submittedEmail }}
+                components={{ strong: <strong /> }}
+              />
             </p>
             <p className="text-amber-600 text-sm font-medium mb-6">
-              Pensez à vérifier votre dossier Courrier indésirable / Spams (notamment sur les adresses @edu.em-lyon.com).
+              {t('forgotPassword.spamWarning')}
             </p>
             <Button variant="outline" onClick={onBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour à la connexion
+              {t('forgotPassword.backToLogin')}
             </Button>
           </div>
         </CardContent>
@@ -99,19 +103,19 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         <div className="mx-auto w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-4">
           <Mail className="h-6 w-6 text-foreground" />
         </div>
-        <CardTitle className="text-2xl font-display">Mot de passe oublié</CardTitle>
+        <CardTitle className="text-2xl font-display">{t('forgotPassword.title')}</CardTitle>
         <CardDescription>
-          Entrez votre email pour recevoir un lien de réinitialisation
+          {t('forgotPassword.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="reset-email">Email</Label>
+            <Label htmlFor="reset-email">{t('forgotPassword.emailLabel')}</Label>
             <Input
               id="reset-email"
               type="email"
-              placeholder="vous@exemple.com"
+              placeholder={t('forgotPassword.emailPlaceholder')}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -136,7 +140,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : null}
-            {'Envoyer le lien'}
+            {t('forgotPassword.sendLink')}
           </Button>
 
           <Button
@@ -146,7 +150,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
             onClick={onBack}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
+            {t('forgotPassword.back')}
           </Button>
         </form>
       </CardContent>

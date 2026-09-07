@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { ContentCategory, useUpdateContentCategory } from '@/hooks/useContentCategories';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ interface CategoryBannerProps {
 }
 
 export function CategoryBanner({ category }: CategoryBannerProps) {
+  const { t } = useTranslation('content');
   const { isAdmin } = useAuth();
   const updateCategory = useUpdateContentCategory();
   
@@ -38,10 +40,10 @@ export function CategoryBanner({ category }: CategoryBannerProps) {
         logo_url: editData.logo_url || null,
         description: editData.description || null,
       });
-      toast.success('Catégorie mise à jour');
+      toast.success(t('category.updateSuccess'));
       setIsDialogOpen(false);
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('category.updateError'));
     }
   };
 
@@ -81,23 +83,23 @@ export function CategoryBanner({ category }: CategoryBannerProps) {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle className="font-display">Modifier {category.name}</DialogTitle>
+                    <DialogTitle className="font-display">{t('category.edit', { name: category.name })}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <FileUploadInput
-                      label="Logo (format rond)"
+                      label={t('category.logo')}
                       value={editData.logo_url}
                       onChange={(url) => setEditData({ ...editData, logo_url: url })}
                       folder="categories"
                     />
                     
                     <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description">{t('category.description')}</Label>
                       <Textarea
                         id="description"
                         value={editData.description}
                         onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                        placeholder="Description de la catégorie..."
+                        placeholder={t('category.descriptionPlaceholder')}
                         rows={4}
                       />
                     </div>
@@ -110,7 +112,7 @@ export function CategoryBanner({ category }: CategoryBannerProps) {
                       {updateCategory.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       ) : null}
-                      Enregistrer
+                      {t('category.save')}
                     </Button>
                   </div>
                 </DialogContent>

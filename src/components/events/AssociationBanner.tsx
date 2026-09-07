@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Pencil, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FileUploadInput } from '@/components/FileUploadInput';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface AssociationBannerProps {
@@ -37,6 +38,7 @@ function useCreateAssociation() {
 }
 
 export function AssociationBanner({ associationName }: AssociationBannerProps) {
+  const { t } = useTranslation('events');
   const { isAdmin } = useAuth();
   const { data: associations, isLoading } = useAssociations();
   const updateAssociation = useUpdateAssociation();
@@ -64,7 +66,7 @@ export function AssociationBanner({ associationName }: AssociationBannerProps) {
           description: newAssoc.description || '',
         });
       } catch (error) {
-        toast.error('Erreur lors de la création de l\'association');
+        toast.error(t('toasts.associationCreateError'));
         return;
       }
     } else {
@@ -92,7 +94,7 @@ export function AssociationBanner({ associationName }: AssociationBannerProps) {
     );
     
     if (!assocToUpdate) {
-      toast.error('Association non trouvée');
+      toast.error(t('toasts.associationNotFound'));
       return;
     }
 
@@ -102,10 +104,10 @@ export function AssociationBanner({ associationName }: AssociationBannerProps) {
         logo_url: editData.logo_url || null,
         description: editData.description || null,
       });
-      toast.success('Association mise à jour');
+      toast.success(t('toasts.associationUpdated'));
       setIsDialogOpen(false);
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('toasts.associationUpdateError'));
     }
   };
 
@@ -153,23 +155,23 @@ export function AssociationBanner({ associationName }: AssociationBannerProps) {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle className="font-display">Modifier {associationName}</DialogTitle>
+                    <DialogTitle className="font-display">{t('association.editTitle', { name: associationName })}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <FileUploadInput
-                      label="Logo (format rond)"
+                      label={t('association.logoLabel')}
                       value={editData.logo_url}
                       onChange={(url) => setEditData({ ...editData, logo_url: url })}
                       folder="associations"
                     />
                     
                     <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description">{t('association.descriptionLabel')}</Label>
                       <Textarea
                         id="description"
                         value={editData.description}
                         onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                        placeholder="Description de l'association..."
+                        placeholder={t('association.descriptionPlaceholder')}
                         rows={4}
                       />
                     </div>
@@ -182,7 +184,7 @@ export function AssociationBanner({ associationName }: AssociationBannerProps) {
                       {updateAssociation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       ) : null}
-                      Enregistrer
+                      {t('save')}
                     </Button>
                   </div>
                 </DialogContent>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Shield, User, Eye, EyeOff, Loader2, ArrowRight, Lock, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { EmailVerificationPending } from '@/components/auth/EmailVerificationPending';
@@ -16,12 +17,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import logoJ from '@/assets/logo-j.jpeg';
 import { supabase } from '@/integrations/supabase/client';
 
-const emailSchema = z.string().email('Email invalide');
-const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
-
 export default function Auth() {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
   const { user, signIn, signUp, signInAsAdmin, loading } = useAuth();
+  const emailSchema = z.string().email(t('validation.invalidEmail'));
+  const passwordSchema = z.string().min(6, t('validation.passwordMinLength'));
 
   const [authMode, setAuthMode] = useState<'user' | 'admin'>('user');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -132,13 +133,13 @@ export default function Auth() {
 
     if (isSignUp) {
       if (!firstName.trim() || !lastName.trim()) {
-        toast.error('Veuillez remplir tous les champs');
+        toast.error(t('validation.fillAllFields'));
         setIsSubmitting(false);
         return;
       }
 
       if (!email.endsWith('@edu.em-lyon.com')) {
-        toast.error('Seules les adresses email @edu.em-lyon.com sont autorisées');
+        toast.error(t('validation.emlyonOnly'));
         setIsSubmitting(false);
         return;
       }
@@ -147,7 +148,7 @@ export default function Auth() {
       const { error } = await signUp(email, password, fullName);
       if (error) {
         if (error.message.includes('already registered') || error.message.includes('already been registered')) {
-          toast.error('Cet email est déjà utilisé');
+          toast.error(t('errors.emailAlreadyUsed'));
         } else {
           toast.error(error.message);
         }
@@ -159,15 +160,15 @@ export default function Auth() {
       const { error } = await signIn(email, password);
       if (error) {
         if (error.message.toLowerCase().includes('email not confirmed')) {
-          toast.error('Veuillez vérifier votre adresse email avant de vous connecter.');
+          toast.error(t('errors.verifyEmailBeforeLogin'));
           setPendingEmail(email);
         } else if (error.message.includes('Invalid login')) {
-          toast.error('Email ou mot de passe incorrect');
+          toast.error(t('errors.invalidCredentials'));
         } else {
           toast.error(error.message);
         }
       } else {
-        toast.success('Connexion réussie !');
+        toast.success(t('success.loginSuccess'));
         navigate('/');
       }
     }
@@ -193,13 +194,13 @@ export default function Auth() {
     const { error } = await signInAsAdmin(email, password);
     if (error) {
       if (error.message.toLowerCase().includes('email not confirmed')) {
-        toast.error('Veuillez vérifier votre adresse email avant de vous connecter.');
+        toast.error(t('errors.verifyEmailBeforeLogin'));
         setPendingEmail(email);
       } else {
         toast.error(error.message);
       }
     } else {
-      toast.success('Connexion administrateur réussie !');
+      toast.success(t('success.adminLoginSuccess'));
       navigate('/');
     }
 
@@ -221,7 +222,7 @@ export default function Auth() {
     }
 
     if (newPassword !== confirmNewPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('validation.passwordsMismatch'));
       setIsResetting(false);
       return;
     }
@@ -230,14 +231,14 @@ export default function Auth() {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
 
       if (error) {
-        toast.error(error.message || 'Impossible de mettre à jour le mot de passe.');
+        toast.error(error.message || t('errors.updatePasswordFailed'));
       } else {
-        toast.success('Mot de passe modifié avec succès !');
+        toast.success(t('success.passwordChanged'));
         setResetSuccess(true);
         setTimeout(() => navigate('/'), 1500);
       }
     } catch (error) {
-      toast.error('Une erreur est survenue lors de la mise à jour du mot de passe.');
+      toast.error(t('errors.updatePasswordError'));
     } finally {
       setIsResetting(false);
     }
@@ -268,12 +269,12 @@ export default function Auth() {
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
                 <Lock className="h-8 w-8 text-destructive" />
               </div>
-              <h3 className="text-xl font-display font-bold mb-2">Lien invalide</h3>
+              <h3 className="text-xl font-display font-bold mb-2">{t('invalidLink.title')}</h3>
               <p className="text-muted-foreground text-sm mb-4">
-                Ce lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien.
+                {t('invalidLink.description')}
               </p>
               <Button onClick={() => navigate('/auth')}>
-                Retour à la connexion
+                {t('invalidLink.backToLogin')}
               </Button>
             </div>
           </CardContent>
@@ -292,12 +293,12 @@ export default function Auth() {
                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-display font-bold mb-2">Mot de passe modifié !</h3>
+                <h3 className="text-xl font-display font-bold mb-2">{t('resetSuccess.title')}</h3>
                 <p className="text-muted-foreground text-sm mb-6">
-                  Votre mot de passe a été mis à jour avec succès.
+                  {t('resetSuccess.description')}
                 </p>
                 <Button className="gradient-red shadow-red" onClick={() => navigate('/')}>
-                  Continuer vers l'application
+                  {t('resetSuccess.continue')}
                 </Button>
               </div>
             </CardContent>
@@ -310,7 +311,7 @@ export default function Auth() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
         <div className="mb-8 text-center animate-fade-in">
           <h1 className="text-4xl font-display font-bold text-gradient mb-2">
-            Journal BBA
+            {t('page.appName')}
           </h1>
         </div>
 
@@ -319,15 +320,15 @@ export default function Auth() {
             <div className="mx-auto w-12 h-12 rounded-full gradient-red flex items-center justify-center mb-4">
               <Lock className="h-6 w-6 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl font-display">Nouveau mot de passe</CardTitle>
+            <CardTitle className="text-2xl font-display">{t('resetForm.title')}</CardTitle>
             <CardDescription>
-              Choisissez un nouveau mot de passe sécurisé
+              {t('resetForm.description')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                <Label htmlFor="new-password">{t('resetForm.newPasswordLabel')}</Label>
                 <div className="relative">
                   <Input
                     id="new-password"
@@ -348,7 +349,7 @@ export default function Auth() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirm-new-password">Confirmer le mot de passe</Label>
+                <Label htmlFor="confirm-new-password">{t('resetForm.confirmPasswordLabel')}</Label>
                 <Input
                   id="confirm-new-password"
                   type="password"
@@ -367,7 +368,7 @@ export default function Auth() {
                 {isResetting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : null}
-                Mettre à jour le mot de passe
+                {t('resetForm.submit')}
               </Button>
             </form>
           </CardContent>
@@ -382,8 +383,8 @@ export default function Auth() {
         <div className="absolute inset-0 dot-pattern opacity-50" />
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-primary/5 blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="relative z-10 mb-8 text-center">
-          <h1 className="text-4xl font-display font-bold text-gradient mb-2">Journal BBA</h1>
-          <p className="text-muted-foreground">EM Lyon Business School</p>
+          <h1 className="text-4xl font-display font-bold text-gradient mb-2">{t('page.appName')}</h1>
+          <p className="text-muted-foreground">{t('page.schoolName')}</p>
         </div>
         <div className="w-full max-w-md relative z-10">
           <EmailVerificationPending
@@ -405,9 +406,9 @@ export default function Auth() {
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-primary/5 blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="relative z-10 mb-8 text-center">
           <h1 className="text-4xl font-display font-bold text-gradient mb-2">
-            Journal BBA
+            {t('page.appName')}
           </h1>
-          <p className="text-muted-foreground">Votre source d'informations</p>
+          <p className="text-muted-foreground">{t('page.infoSourceTagline')}</p>
         </div>
         <div className="w-full max-w-md relative z-10">
           <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
@@ -430,12 +431,12 @@ export default function Auth() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className="mb-10 text-center relative z-10"
       >
-        <img src={logoJ} alt="Journal BBA" className="w-20 h-20 rounded-2xl object-cover shadow-red mx-auto mb-4" />
+        <img src={logoJ} alt={t('page.appName')} className="w-20 h-20 rounded-2xl object-cover shadow-red mx-auto mb-4" />
         <h1 className="text-5xl font-display font-bold text-gradient mb-1">
-          Journal BBA
+          {t('page.appName')}
         </h1>
         <p className="text-muted-foreground text-sm tracking-wide uppercase">
-          EM Lyon Business School
+          {t('page.schoolName')}
         </p>
       </motion.div>
 
@@ -454,11 +455,11 @@ export default function Auth() {
           <TabsList className="grid w-full grid-cols-2 mb-4 h-12 bg-secondary/80 p-1">
             <TabsTrigger value="user" className="flex items-center gap-2 h-full rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-soft font-medium">
               <User className="h-4 w-4" />
-              Utilisateur
+              {t('page.userTab')}
             </TabsTrigger>
             <TabsTrigger value="admin" className="flex items-center gap-2 h-full rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-soft font-medium">
               <Shield className="h-4 w-4" />
-              Admin
+              {t('page.adminTab')}
             </TabsTrigger>
           </TabsList>
 
@@ -466,12 +467,12 @@ export default function Auth() {
             <Card className="shadow-elevated border-0 glass overflow-hidden">
               <CardHeader className="text-center pb-2">
                 <CardTitle className="text-2xl font-display">
-                  {isSignUp ? 'Créer un compte' : 'Bon retour !'}
+                  {isSignUp ? t('page.signUpTitle') : t('page.signInTitle')}
                 </CardTitle>
                 <CardDescription className="text-sm">
                   {isSignUp
-                    ? 'Rejoignez la communauté BBA'
-                    : 'Connectez-vous pour continuer'}
+                    ? t('page.signUpDescription')
+                    : t('page.signInDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -485,10 +486,10 @@ export default function Auth() {
                         className="grid grid-cols-2 gap-3 overflow-hidden"
                       >
                         <div className="space-y-1.5">
-                          <Label htmlFor="firstName" className="text-xs font-medium">Prénom</Label>
+                          <Label htmlFor="firstName" className="text-xs font-medium">{t('page.firstNameLabel')}</Label>
                           <Input
                             id="firstName"
-                            placeholder="Jean"
+                            placeholder={t('page.firstNamePlaceholder')}
                             value={firstName}
                             onChange={(e) => setFirstName(e.target.value)}
                             required={isSignUp}
@@ -496,10 +497,10 @@ export default function Auth() {
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label htmlFor="lastName" className="text-xs font-medium">Nom</Label>
+                          <Label htmlFor="lastName" className="text-xs font-medium">{t('page.lastNameLabel')}</Label>
                           <Input
                             id="lastName"
-                            placeholder="Dupont"
+                            placeholder={t('page.lastNamePlaceholder')}
                             value={lastName}
                             onChange={(e) => setLastName(e.target.value)}
                             required={isSignUp}
@@ -511,11 +512,11 @@ export default function Auth() {
                   </AnimatePresence>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="email" className="text-xs font-medium">Email</Label>
+                    <Label htmlFor="email" className="text-xs font-medium">{t('page.emailLabel')}</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="vous@edu.em-lyon.com"
+                      placeholder={t('page.emailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -524,7 +525,7 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="password" className="text-xs font-medium">Mot de passe</Label>
+                    <Label htmlFor="password" className="text-xs font-medium">{t('page.passwordLabel')}</Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -552,7 +553,7 @@ export default function Auth() {
                         onClick={() => setShowForgotPassword(true)}
                         className="text-xs text-primary hover:underline font-medium"
                       >
-                        Mot de passe oublié ?
+                        {t('page.forgotPasswordLink')}
                       </button>
                     </div>
                   )}
@@ -566,7 +567,7 @@ export default function Auth() {
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
                       <>
-                        {isSignUp ? 'Créer mon compte' : 'Se connecter'}
+                        {isSignUp ? t('page.signUpSubmit') : t('page.signInSubmit')}
                         <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
                       </>
                     )}
@@ -579,9 +580,9 @@ export default function Auth() {
                       className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {isSignUp
-                        ? 'Déjà un compte ? '
-                        : 'Pas de compte ? '}
-                      <span className="text-primary font-semibold">{isSignUp ? 'Se connecter' : "S'inscrire"}</span>
+                        ? t('page.hasAccount')
+                        : t('page.noAccount')}
+                      <span className="text-primary font-semibold">{isSignUp ? t('page.signInAction') : t('page.signUpAction')}</span>
                     </button>
                   </div>
                 </form>
@@ -595,19 +596,19 @@ export default function Auth() {
                 <div className="mx-auto w-14 h-14 rounded-2xl gradient-red flex items-center justify-center mb-3 shadow-red">
                   <Shield className="h-7 w-7 text-primary-foreground" />
                 </div>
-                <CardTitle className="text-2xl font-display">Espace Admin</CardTitle>
+                <CardTitle className="text-2xl font-display">{t('page.adminTitle')}</CardTitle>
                 <CardDescription className="text-sm">
-                  Accès réservé aux administrateurs
+                  {t('page.adminDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAdminAuth} className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="adminEmail" className="text-xs font-medium">Email</Label>
+                    <Label htmlFor="adminEmail" className="text-xs font-medium">{t('page.emailLabel')}</Label>
                     <Input
                       id="adminEmail"
                       type="email"
-                      placeholder="admin@bba.com"
+                      placeholder={t('page.adminEmailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -616,7 +617,7 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="adminPassword" className="text-xs font-medium">Mot de passe</Label>
+                    <Label htmlFor="adminPassword" className="text-xs font-medium">{t('page.passwordLabel')}</Label>
                     <div className="relative">
                       <Input
                         id="adminPassword"
@@ -643,7 +644,7 @@ export default function Auth() {
                       onClick={() => setShowForgotPassword(true)}
                       className="text-xs text-primary hover:underline font-medium"
                     >
-                      Mot de passe oublié ?
+                      {t('page.forgotPasswordLink')}
                     </button>
                   </div>
 
@@ -656,7 +657,7 @@ export default function Auth() {
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
                       <>
-                        Se connecter
+                        {t('page.signInSubmit')}
                         <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
                       </>
                     )}
@@ -675,7 +676,7 @@ export default function Auth() {
         transition={{ delay: 0.5 }}
         className="mt-8 text-xs text-muted-foreground relative z-10"
       >
-        © 2026 Journal BBA — EM Lyon
+        {t('page.footer')}
       </motion.p>
     </div>
   );

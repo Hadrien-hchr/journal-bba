@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Loader2, MailCheck } from 'lucide-react';
@@ -11,6 +12,7 @@ interface EmailVerificationPendingProps {
 }
 
 export function EmailVerificationPending({ email, onBack }: EmailVerificationPendingProps) {
+  const { t } = useTranslation('auth');
   const [isResending, setIsResending] = useState(false);
 
   const handleResend = async () => {
@@ -21,9 +23,9 @@ export function EmailVerificationPending({ email, onBack }: EmailVerificationPen
       options: { emailRedirectTo: `${window.location.origin}/` },
     });
     if (error) {
-      toast.error("Impossible de renvoyer l'email pour le moment");
+      toast.error(t('errors.resendEmailFailed'));
     } else {
-      toast.success('Email de confirmation renvoyé !');
+      toast.success(t('success.confirmationEmailResent'));
     }
     setIsResending(false);
   };
@@ -35,14 +37,13 @@ export function EmailVerificationPending({ email, onBack }: EmailVerificationPen
           <div className="w-16 h-16 rounded-2xl gradient-red flex items-center justify-center mb-5 shadow-red">
             <MailCheck className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h3 className="text-2xl font-display font-bold mb-3">Vérifiez votre email</h3>
+          <h3 className="text-2xl font-display font-bold mb-3">{t('emailVerification.title')}</h3>
           <p className="text-muted-foreground text-sm mb-2">
-            Un email de confirmation a été envoyé à votre adresse em-lyon :
+            {t('emailVerification.sentTo')}
           </p>
           <p className="font-semibold text-sm mb-4 break-all">{email}</p>
           <p className="text-muted-foreground text-sm mb-6">
-            Veuillez cliquer sur le lien pour activer votre compte. Tant que votre adresse
-            n'est pas confirmée, l'accès à l'application reste bloqué.
+            {t('emailVerification.instructions')}
           </p>
 
           <div className="w-full space-y-2">
@@ -53,11 +54,11 @@ export function EmailVerificationPending({ email, onBack }: EmailVerificationPen
               disabled={isResending}
             >
               {isResending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Renvoyer l'email
+              {t('emailVerification.resend')}
             </Button>
             <Button variant="ghost" className="w-full" onClick={onBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour à la connexion
+              {t('emailVerification.backToLogin')}
             </Button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   useContentCategories, 
@@ -22,6 +23,7 @@ interface CategoryManagerProps {
 }
 
 export function CategoryManager({ section, selectedCategory, onSelectCategory }: CategoryManagerProps) {
+  const { t } = useTranslation('content');
   const { isAdmin } = useAuth();
   const { data: categories, isLoading } = useContentCategories(section);
   const createCategory = useCreateContentCategory();
@@ -32,7 +34,7 @@ export function CategoryManager({ section, selectedCategory, onSelectCategory }:
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
-      toast.error('Le nom est requis');
+      toast.error(t('category.nameRequired'));
       return;
     }
 
@@ -41,13 +43,13 @@ export function CategoryManager({ section, selectedCategory, onSelectCategory }:
         name: newCategoryName.trim(),
         section,
       });
-      toast.success('Catégorie créée');
+      toast.success(t('category.createSuccess'));
       setNewCategoryName('');
     } catch (error: any) {
       if (error.code === '23505') {
-        toast.error('Cette catégorie existe déjà');
+        toast.error(t('category.alreadyExists'));
       } else {
-        toast.error('Erreur lors de la création');
+        toast.error(t('category.createError'));
       }
     }
   };
@@ -55,12 +57,12 @@ export function CategoryManager({ section, selectedCategory, onSelectCategory }:
   const handleDeleteCategory = async (id: string) => {
     try {
       await deleteCategory.mutateAsync(id);
-      toast.success('Catégorie supprimée');
+      toast.success(t('category.deleteSuccess'));
       if (selectedCategory === id) {
         onSelectCategory('all');
       }
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('category.deleteError'));
     }
   };
 
@@ -91,7 +93,7 @@ export function CategoryManager({ section, selectedCategory, onSelectCategory }:
               selectedCategory === 'all' && 'gradient-red shadow-red'
             )}
           >
-            Tous
+            {t('category.all')}
           </Button>
           
           {categories?.map((cat) => (
@@ -118,13 +120,13 @@ export function CategoryManager({ section, selectedCategory, onSelectCategory }:
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle className="font-display">Gérer les catégories</DialogTitle>
+                  <DialogTitle className="font-display">{t('category.manage')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   {/* Add new category */}
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Nouvelle catégorie..."
+                      placeholder={t('category.newCategoryPlaceholder')}
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
@@ -144,10 +146,10 @@ export function CategoryManager({ section, selectedCategory, onSelectCategory }:
 
                   {/* List existing categories */}
                   <div className="space-y-2">
-                    <Label>Catégories existantes</Label>
+                    <Label>{t('category.existing')}</Label>
                     {categories?.length === 0 ? (
                       <p className="text-sm text-muted-foreground py-4 text-center">
-                        Aucune catégorie
+                        {t('category.empty')}
                       </p>
                     ) : (
                       <div className="space-y-2 max-h-60 overflow-y-auto">

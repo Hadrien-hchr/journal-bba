@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BlockData, createDefaultBlock } from './ArticleBlock';
 import { BlockProperties } from './BlockProperties';
 import { ArticleCanvas } from './ArticleCanvas';
@@ -24,6 +25,7 @@ export function ArticleEditor({
   backgroundColor,
   onBackgroundColorChange,
 }: ArticleEditorProps) {
+  const { t } = useTranslation('content');
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) || null;
@@ -49,23 +51,23 @@ export function ArticleEditor({
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm font-medium text-muted-foreground">Ajouter :</span>
+        <span className="text-sm font-medium text-muted-foreground">{t('articleEditor.add')}</span>
         <Button type="button" variant="outline" size="sm" onClick={() => addBlock('title')}>
-          <Heading1 className="h-4 w-4 mr-1" /> Titre
+          <Heading1 className="h-4 w-4 mr-1" /> {t('articleEditor.title')}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => addBlock('subtitle')}>
-          <Heading2 className="h-4 w-4 mr-1" /> Sous-titre
+          <Heading2 className="h-4 w-4 mr-1" /> {t('articleEditor.subtitle')}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => addBlock('text')}>
-          <Type className="h-4 w-4 mr-1" /> Texte
+          <Type className="h-4 w-4 mr-1" /> {t('articleEditor.text')}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => addBlock('image')}>
-          <Image className="h-4 w-4 mr-1" /> Image
+          <Image className="h-4 w-4 mr-1" /> {t('articleEditor.image')}
         </Button>
       </div>
 
       <div className="flex items-center gap-2">
-        <Label className="text-xs">Fond :</Label>
+        <Label className="text-xs">{t('articleEditor.background')}</Label>
         <Input
           type="color"
           value={backgroundColor}

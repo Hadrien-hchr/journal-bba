@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
@@ -25,6 +26,7 @@ export function MultiFileUpload({
   maxFiles = 10,
   className,
 }: MultiFileUploadProps) {
+  const { t } = useTranslation('content');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, progress } = useFileUpload();
 
@@ -107,7 +109,7 @@ export function MultiFileUpload({
       )}
 
       <p className="text-xs text-muted-foreground">
-        {values.length}/{maxFiles} images
+        {t('multiFileUpload.count', { count: values.length, max: maxFiles })}
       </p>
     </div>
   );

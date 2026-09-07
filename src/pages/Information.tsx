@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInformation, useDeleteInformation } from '@/hooks/useContent';
 import { useContentCategories } from '@/hooks/useContentCategories';
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2, Loader2, Info, Clock, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
 import { CategoryManager } from '@/components/content/CategoryManager';
 import { ArticleEditor, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/components/articles/ArticleEditor';
 import { ArticleCanvas } from '@/components/articles/ArticleCanvas';
@@ -25,6 +26,8 @@ import * as LucideIcons from 'lucide-react';
 const AVAILABLE_ICONS = ['Info', 'Newspaper', 'BookOpen', 'FileText', 'ScrollText', 'Megaphone', 'Bell', 'Star', 'Sparkles', 'Flame'];
 
 export default function Information() {
+  const { t, i18n } = useTranslation('content');
+  const dateLocale = i18n.language === 'en' ? enUS : fr;
   const { isAdmin, user } = useAuth();
   const { information, isLoading } = useInformation();
   const { data: categories } = useContentCategories('information');
@@ -59,7 +62,7 @@ export default function Information() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (blocks.length === 0) {
-      toast.error('Ajoutez au moins un bloc à votre article');
+      toast.error(t('information.addAtLeastOneBlock'));
       return;
     }
 
@@ -78,7 +81,7 @@ export default function Information() {
 
       if (error) throw error;
       
-      toast.success('Article publié !');
+      toast.success(t('information.publishSuccess'));
       queryClient.invalidateQueries({ queryKey: ['information'] });
       setIsDialogOpen(false);
       setTitle('');
@@ -86,7 +89,7 @@ export default function Information() {
       setBgColor('#ffffff');
       setCategoryId('');
     } catch (error) {
-      toast.error("Erreur lors de la publication");
+      toast.error(t('information.publishError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,9 +98,9 @@ export default function Information() {
   const handleDelete = async (id: string) => {
     try {
       await deleteInfo.mutateAsync(id);
-      toast.success('Article supprimé');
+      toast.success(t('information.deleteSuccess'));
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('information.deleteError'));
     }
   };
 
@@ -107,10 +110,10 @@ export default function Information() {
         key: 'info_tab',
         value: { name: tabName || 'Infos', icon: tabIcon || 'Info' },
       });
-      toast.success('Paramètres mis à jour');
+      toast.success(t('information.settings.updateSuccess'));
       setIsSettingsOpen(false);
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('information.settings.updateError'));
     }
   };
 
@@ -133,7 +136,7 @@ export default function Information() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold">{displayName}</h2>
-          <p className="text-muted-foreground text-sm">Actualités et annonces</p>
+          <p className="text-muted-foreground text-sm">{t('information.subtitle')}</p>
         </div>
         
         {isAdmin && (
@@ -145,31 +148,31 @@ export default function Information() {
               <DialogTrigger asChild>
                 <Button className="gradient-red shadow-red">
                   <Plus className="h-4 w-4 mr-2" />
-                  Nouveau
+                  {t('information.new')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-display">Nouvel article</DialogTitle>
+                  <DialogTitle className="font-display">{t('information.newArticleTitle')}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="articleTitle">Titre de l'article</Label>
+                    <Label htmlFor="articleTitle">{t('information.articleTitleLabel')}</Label>
                     <Input
                       id="articleTitle"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Titre..."
+                      placeholder={t('information.articleTitlePlaceholder')}
                     />
                   </div>
 
                   {categories && categories.length > 0 && (
                     <div className="space-y-2">
-                      <Label>Catégorie</Label>
+                      <Label>{t('information.category')}</Label>
                       <Select value={categoryId} onValueChange={setCategoryId}>
-                        <SelectTrigger><SelectValue placeholder="Sans catégorie" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={t('information.noCategory')} /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Sans catégorie</SelectItem>
+                          <SelectItem value="none">{t('information.noCategory')}</SelectItem>
                           {categories.map((cat) => (
                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                           ))}
@@ -191,7 +194,7 @@ export default function Information() {
                     disabled={isSubmitting}
                   >
                     {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Publier l'article
+                    {t('information.publishArticle')}
                   </Button>
                 </form>
               </DialogContent>
@@ -204,15 +207,15 @@ export default function Information() {
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display">Paramètres de l'onglet</DialogTitle>
+            <DialogTitle className="font-display">{t('information.settings.title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Nom de l'onglet</Label>
-              <Input value={tabName} onChange={(e) => setTabName(e.target.value)} placeholder="Infos" />
+              <Label>{t('information.settings.tabName')}</Label>
+              <Input value={tabName} onChange={(e) => setTabName(e.target.value)} placeholder={t('information.settings.tabNamePlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>Icône</Label>
+              <Label>{t('information.settings.icon')}</Label>
               <div className="grid grid-cols-5 gap-2">
                 {AVAILABLE_ICONS.map((iconName) => {
                   const IconComp = (LucideIcons as any)[iconName];
@@ -235,7 +238,7 @@ export default function Information() {
             </div>
             <Button onClick={handleSaveSettings} className="w-full gradient-red shadow-red" disabled={updateSetting.isPending}>
               {updateSetting.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Enregistrer
+              {t('information.settings.save')}
             </Button>
           </div>
         </DialogContent>
@@ -252,7 +255,7 @@ export default function Information() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Info className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Aucun article pour le moment</p>
+            <p className="text-muted-foreground">{t('information.empty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -271,7 +274,7 @@ export default function Information() {
                     )}
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {format(new Date(info.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      {format(new Date(info.created_at), "d MMMM yyyy 'à' HH:mm", { locale: dateLocale })}
                     </div>
                   </div>
                   {isAdmin && (

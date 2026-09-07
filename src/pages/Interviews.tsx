@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInterviews, useCreateInterview, useDeleteInterview } from '@/hooks/useContent';
 import { useContentCategories } from '@/hooks/useContentCategories';
@@ -11,11 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Trash2, Loader2, PlayCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
 import { FileUploadInput } from '@/components/FileUploadInput';
 import { CategoryManager } from '@/components/content/CategoryManager';
 
 export default function Interviews() {
+  const { t, i18n } = useTranslation('content');
+  const dateLocale = i18n.language === 'en' ? enUS : fr;
   const { isAdmin } = useAuth();
   const { interviews, isLoading } = useInterviews();
   const { data: categories } = useContentCategories('interviews');
@@ -56,12 +59,12 @@ export default function Interviews() {
     e.preventDefault();
     
     if (!formData.title.trim() || !formData.video_url.trim()) {
-      toast.error('Le titre et l\'URL sont requis');
+      toast.error(t('interviews.requiredFields'));
       return;
     }
 
     if (!isValidYoutubeUrl(formData.video_url.trim())) {
-      toast.error('URL YouTube invalide. Formats acceptés: youtube.com/watch?v=..., youtu.be/..., youtube.com/embed/...');
+      toast.error(t('interviews.invalidUrl'));
       return;
     }
 
@@ -78,20 +81,20 @@ export default function Interviews() {
       const { triggerPush } = await import('@/hooks/useNotificationTemplates');
       triggerPush('interview', formData.title.trim(), '/interviews').catch(console.error);
 
-      toast.success('Interview ajoutée !');
+      toast.success(t('interviews.addSuccess'));
       setIsDialogOpen(false);
       setFormData({ title: '', video_url: '', thumbnail_url: '', description: '', category_id: '' });
     } catch (error) {
-      toast.error('Erreur lors de l\'ajout');
+      toast.error(t('interviews.addError'));
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await deleteInterview.mutateAsync(id);
-      toast.success('Interview supprimée');
+      toast.success(t('interviews.deleteSuccess'));
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('interviews.deleteError'));
     }
   };
 
@@ -107,8 +110,8 @@ export default function Interviews() {
     <div className="p-4 space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-display font-bold">Interviews</h2>
-          <p className="text-muted-foreground text-sm">Vidéos et entretiens</p>
+          <h2 className="text-2xl font-display font-bold">{t('interviews.title')}</h2>
+          <p className="text-muted-foreground text-sm">{t('interviews.subtitle')}</p>
         </div>
         
         {isAdmin && (
@@ -116,27 +119,27 @@ export default function Interviews() {
             <DialogTrigger asChild>
               <Button className="gradient-red shadow-red">
                 <Plus className="h-4 w-4 mr-2" />
-                Ajouter
+                {t('interviews.add')}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="font-display">Nouvelle interview</DialogTitle>
+                <DialogTitle className="font-display">{t('interviews.newInterview')}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="videoTitle">Titre *</Label>
+                  <Label htmlFor="videoTitle">{t('interviews.titleLabel')}</Label>
                   <Input
                     id="videoTitle"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Titre de l'interview..."
+                    placeholder={t('interviews.titlePlaceholder')}
                     required
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="videoUrl">URL de la vidéo *</Label>
+                  <Label htmlFor="videoUrl">{t('interviews.videoUrlLabel')}</Label>
                   <Input
                     id="videoUrl"
                     type="url"
@@ -146,20 +149,20 @@ export default function Interviews() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Supporte YouTube et les liens embed
+                    {t('interviews.videoUrlHint')}
                   </p>
                 </div>
 
                 {categories && categories.length > 0 && (
                   <div className="space-y-2">
-                    <Label htmlFor="category">Catégorie</Label>
+                    <Label htmlFor="category">{t('interviews.category')}</Label>
                     <select
                       id="category"
                       value={formData.category_id}
                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <option value="">Sans catégorie</option>
+                      <option value="">{t('interviews.noCategory')}</option>
                       {categories.map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
@@ -168,19 +171,19 @@ export default function Interviews() {
                 )}
                 
                 <FileUploadInput
-                  label="Miniature (optionnel)"
+                  label={t('interviews.thumbnail')}
                   value={formData.thumbnail_url}
                   onChange={(url) => setFormData({ ...formData, thumbnail_url: url })}
                   folder="interviews"
                 />
                 
                 <div className="space-y-2">
-                  <Label htmlFor="videoDescription">Description (optionnel)</Label>
+                  <Label htmlFor="videoDescription">{t('interviews.descriptionLabel')}</Label>
                   <Textarea
                     id="videoDescription"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Décrivez l'interview..."
+                    placeholder={t('interviews.descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -193,7 +196,7 @@ export default function Interviews() {
                   {createInterview.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
-                  Publier
+                  {t('interviews.publish')}
                 </Button>
               </form>
             </DialogContent>
@@ -212,7 +215,7 @@ export default function Interviews() {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <PlayCircle className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Aucune interview pour le moment</p>
+            <p className="text-muted-foreground">{t('interviews.empty')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -233,7 +236,7 @@ export default function Interviews() {
                   </div>
                 ) : (
                   <div className="aspect-video w-full bg-muted flex items-center justify-center">
-                    <p className="text-muted-foreground text-sm">Vidéo non disponible</p>
+                    <p className="text-muted-foreground text-sm">{t('interviews.videoUnavailable')}</p>
                   </div>
                 );
               })()}
@@ -245,7 +248,7 @@ export default function Interviews() {
                     </CardTitle>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                       <Clock className="h-3 w-3" />
-                      {format(new Date(interview.created_at), "d MMMM yyyy", { locale: fr })}
+                      {format(new Date(interview.created_at), "d MMMM yyyy", { locale: dateLocale })}
                     </div>
                   </div>
                   {isAdmin && (

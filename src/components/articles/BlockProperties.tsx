@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { BlockData } from './ArticleBlock';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ interface BlockPropertiesProps {
 }
 
 export function BlockProperties({ block, onChange, onDelete }: BlockPropertiesProps) {
+  const { t } = useTranslation('content');
   const update = (partial: Partial<BlockData>) => onChange({ ...block, ...partial });
 
   return (
@@ -27,14 +29,14 @@ export function BlockProperties({ block, onChange, onDelete }: BlockPropertiesPr
 
       {block.type === 'image' ? (
         <FileUploadInput
-          label="Image"
+          label={t('blockProperties.imageLabel')}
           value={block.content}
           onChange={(url) => update({ content: url })}
           folder="articles"
         />
       ) : (
         <div className="space-y-1">
-          <Label className="text-xs">Contenu</Label>
+          <Label className="text-xs">{t('blockProperties.content')}</Label>
           <Textarea
             value={block.content}
             onChange={(e) => update({ content: e.target.value })}
@@ -48,7 +50,7 @@ export function BlockProperties({ block, onChange, onDelete }: BlockPropertiesPr
         {block.type !== 'image' && (
           <>
             <div className="space-y-1">
-              <Label className="text-xs">Taille police</Label>
+              <Label className="text-xs">{t('blockProperties.fontSize')}</Label>
               <Input
                 type="number"
                 value={block.fontSize || 14}
@@ -57,19 +59,19 @@ export function BlockProperties({ block, onChange, onDelete }: BlockPropertiesPr
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Alignement</Label>
+              <Label className="text-xs">{t('blockProperties.alignment')}</Label>
               <Select value={block.textAlign || 'left'} onValueChange={(v) => update({ textAlign: v as any })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="left">Gauche</SelectItem>
-                  <SelectItem value="center">Centre</SelectItem>
-                  <SelectItem value="right">Droite</SelectItem>
-                  <SelectItem value="justify">Justifié</SelectItem>
+                  <SelectItem value="left">{t('blockProperties.alignLeft')}</SelectItem>
+                  <SelectItem value="center">{t('blockProperties.alignCenter')}</SelectItem>
+                  <SelectItem value="right">{t('blockProperties.alignRight')}</SelectItem>
+                  <SelectItem value="justify">{t('blockProperties.alignJustify')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Couleur</Label>
+              <Label className="text-xs">{t('blockProperties.color')}</Label>
               <Input
                 type="color"
                 value={block.color || '#000000'}
@@ -78,12 +80,12 @@ export function BlockProperties({ block, onChange, onDelete }: BlockPropertiesPr
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Style</Label>
+              <Label className="text-xs">{t('blockProperties.style')}</Label>
               <Select value={block.fontStyle || 'normal'} onValueChange={(v) => update({ fontStyle: v })}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="italic">Italique</SelectItem>
+                  <SelectItem value="normal">{t('blockProperties.styleNormal')}</SelectItem>
+                  <SelectItem value="italic">{t('blockProperties.styleItalic')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -91,13 +93,13 @@ export function BlockProperties({ block, onChange, onDelete }: BlockPropertiesPr
         )}
         {block.type === 'image' && (
           <div className="space-y-1 col-span-2">
-            <Label className="text-xs">Ajustement</Label>
+            <Label className="text-xs">{t('blockProperties.fit')}</Label>
             <Select value={block.objectFit || 'cover'} onValueChange={(v) => update({ objectFit: v as any })}>
               <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="cover">Couvrir</SelectItem>
-                <SelectItem value="contain">Contenir</SelectItem>
-                <SelectItem value="fill">Remplir</SelectItem>
+                <SelectItem value="cover">{t('blockProperties.fitCover')}</SelectItem>
+                <SelectItem value="contain">{t('blockProperties.fitContain')}</SelectItem>
+                <SelectItem value="fill">{t('blockProperties.fitFill')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

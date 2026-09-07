@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Eye, EyeOff, Loader2, Lock, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-const passwordSchema = z.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères');
 
 function getRecoveryParams() {
   const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -22,6 +21,8 @@ function getRecoveryParams() {
 
 export default function ResetPassword() {
   const navigate = useNavigate();
+  const { t } = useTranslation('auth');
+  const passwordSchema = z.string().min(6, t('validation.passwordMinLength'));
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -45,7 +46,7 @@ export default function ResetPassword() {
 
           if (error) {
             console.error('verifyOtp error:', error);
-            setSessionError(error.message || 'Le lien de réinitialisation est invalide ou a expiré.');
+            setSessionError(error.message || t('invalidLink.description'));
             setIsValidSession(false);
           } else {
             setIsValidSession(true);
@@ -54,7 +55,7 @@ export default function ResetPassword() {
           return;
         } catch (err) {
           console.error('verifyOtp exception:', err);
-          setSessionError('Une erreur est survenue lors de la vérification du lien.');
+          setSessionError(t('errors.updatePasswordError'));
           setIsValidSession(false);
           setIsLoading(false);
           return;
@@ -96,7 +97,7 @@ export default function ResetPassword() {
     }
 
     if (password !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('validation.passwordsMismatch'));
       setIsSubmitting(false);
       return;
     }
@@ -105,14 +106,14 @@ export default function ResetPassword() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        toast.error(error.message || 'Impossible de mettre à jour le mot de passe.');
+        toast.error(error.message || t('errors.updatePasswordFailed'));
       } else {
-        toast.success('Mot de passe modifié avec succès !');
+        toast.success(t('success.passwordChanged'));
         setIsSuccess(true);
         setTimeout(() => navigate('/'), 1500);
       }
     } catch (error) {
-      toast.error('Une erreur est survenue lors de la mise à jour du mot de passe.');
+      toast.error(t('errors.updatePasswordError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -135,12 +136,12 @@ export default function ResetPassword() {
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
                 <Lock className="h-8 w-8 text-destructive" />
               </div>
-              <h3 className="text-xl font-display font-bold mb-2">Lien invalide</h3>
+              <h3 className="text-xl font-display font-bold mb-2">{t('invalidLink.title')}</h3>
               <p className="text-muted-foreground text-sm mb-4">
-                {sessionError || "Ce lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien."}
+                {sessionError || t('invalidLink.description')}
               </p>
               <Button onClick={() => navigate('/auth')}>
-                Retour à la connexion
+                {t('invalidLink.backToLogin')}
               </Button>
             </div>
           </CardContent>
@@ -158,12 +159,12 @@ export default function ResetPassword() {
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="text-xl font-display font-bold mb-2">Mot de passe modifié !</h3>
+              <h3 className="text-xl font-display font-bold mb-2">{t('resetSuccess.title')}</h3>
               <p className="text-muted-foreground text-sm mb-6">
-                Votre mot de passe a été mis à jour avec succès.
+                {t('resetSuccess.description')}
               </p>
               <Button className="gradient-red shadow-red" onClick={() => navigate('/')}>
-                Continuer vers l'application
+                {t('resetSuccess.continue')}
               </Button>
             </div>
           </CardContent>
@@ -176,7 +177,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       <div className="mb-8 text-center animate-fade-in">
         <h1 className="text-4xl font-display font-bold text-gradient mb-2">
-          Journal BBA
+          {t('page.appName')}
         </h1>
       </div>
 
@@ -185,15 +186,15 @@ export default function ResetPassword() {
           <div className="mx-auto w-12 h-12 rounded-full gradient-red flex items-center justify-center mb-4">
             <Lock className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-display">Nouveau mot de passe</CardTitle>
+          <CardTitle className="text-2xl font-display">{t('resetForm.title')}</CardTitle>
           <CardDescription>
-            Choisissez un nouveau mot de passe sécurisé
+            {t('resetForm.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">Nouveau mot de passe</Label>
+              <Label htmlFor="new-password">{t('resetForm.newPasswordLabel')}</Label>
               <div className="relative">
                 <Input
                   id="new-password"
@@ -214,7 +215,7 @@ export default function ResetPassword() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
+              <Label htmlFor="confirm-password">{t('resetForm.confirmPasswordLabel')}</Label>
               <Input
                 id="confirm-password"
                 type="password"
@@ -233,7 +234,7 @@ export default function ResetPassword() {
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
-              Mettre à jour le mot de passe
+              {t('resetForm.submit')}
             </Button>
           </form>
         </CardContent>

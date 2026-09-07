@@ -6,14 +6,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { format, isBefore } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Trash2, Euro, Ticket, Loader2, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
 export default function EventDetail() {
+  const { t, i18n } = useTranslation('events');
+  const dateLocale = i18n.language.startsWith('fr') ? fr : enUS;
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
@@ -39,13 +42,13 @@ export default function EventDetail() {
 
   const handleSubscriptionToggle = async () => {
     if (!user || !event) {
-      toast.error('Connectez-vous pour vous abonner aux événements');
+      toast.error(t('toasts.loginRequired'));
       return;
     }
     try {
       await toggleSubscription.mutateAsync({ eventId: event.id, eventTitle: event.title });
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('toasts.updateError'));
     }
   };
 
@@ -53,10 +56,10 @@ export default function EventDetail() {
     if (!event) return;
     try {
       await deleteEvent.mutateAsync(event.id);
-      toast.success('Événement supprimé');
+      toast.success(t('toasts.deleteSuccess'));
       navigate('/events');
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('toasts.deleteError'));
     }
   };
 
@@ -67,10 +70,10 @@ export default function EventDetail() {
         id: event.id,
         photo_link: photoLinkValue || null,
       });
-      toast.success('Lien photos enregistré');
+      toast.success(t('toasts.photoLinkSaved'));
       setEditingPhotoLink(false);
     } catch (error) {
-      toast.error("Erreur lors de l'enregistrement");
+      toast.error(t('toasts.photoLinkSaveError'));
     }
   };
 
@@ -87,9 +90,9 @@ export default function EventDetail() {
       <div className="p-4 space-y-4">
         <Button variant="ghost" onClick={() => navigate('/events')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
+          {t('back')}
         </Button>
-        <p className="text-center text-muted-foreground">Événement non trouvé</p>
+        <p className="text-center text-muted-foreground">{t('notFound')}</p>
       </div>
     );
   }
@@ -102,7 +105,7 @@ export default function EventDetail() {
       {/* Back button */}
       <Button variant="ghost" onClick={() => navigate('/events')} className="mb-2">
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Retour aux événements
+        {t('backToEvents')}
       </Button>
 
       <Card
@@ -121,7 +124,7 @@ export default function EventDetail() {
             {isPast && (
               <div className="absolute inset-0 bg-background/30 flex items-center justify-center">
                 <span className="bg-muted/90 text-muted-foreground px-3 py-1 rounded-full text-sm font-medium">
-                  Événement passé
+                  {t('pastBadge')}
                 </span>
               </div>
             )}
@@ -150,7 +153,7 @@ export default function EventDetail() {
                   'h-10 w-10',
                   subscriptions.includes(event.id) && 'text-primary'
                 )}
-                title={subscriptions.includes(event.id) ? 'Retirer du calendrier' : 'Ajouter au calendrier'}
+                title={subscriptions.includes(event.id) ? t('removeFromCalendar') : t('addToCalendar')}
               >
                 <CalendarDays
                   className={cn(
@@ -184,14 +187,14 @@ export default function EventDetail() {
             <div className="flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-primary" />
               <span className="font-medium">
-                {format(new Date(event.event_date), "EEEE dd MMMM yyyy 'à' HH:mm", { locale: fr })}
+                {format(new Date(event.event_date), t('dateTimeFormatLong'), { locale: dateLocale })}
               </span>
             </div>
             {event.price !== null && (
               <div className="flex items-center gap-2">
                 <Euro className="h-5 w-5 text-primary" />
                 <span className="font-medium">
-                  {event.price === 0 ? 'Gratuit' : `${event.price}€`}
+                  {event.price === 0 ? t('free') : `${event.price}€`}
                 </span>
               </div>
             )}
@@ -207,7 +210,7 @@ export default function EventDetail() {
             >
               <a href={event.ticket_link} target="_blank" rel="noopener noreferrer">
                 <Ticket className="h-4 w-4 mr-2" />
-                Accéder à la billetterie
+                {t('accessTicketing')}
               </a>
             </Button>
           )}
@@ -221,7 +224,7 @@ export default function EventDetail() {
                     <div className="flex gap-2">
                       <Input
                         type="url"
-                        placeholder="Lien vers les photos..."
+                        placeholder={t('photoLinkPlaceholder')}
                         value={photoLinkValue}
                         onChange={(e) => setPhotoLinkValue(e.target.value)}
                         className="flex-1"
@@ -234,7 +237,7 @@ export default function EventDetail() {
                         {updateEvent.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          'Enregistrer'
+                          t('save')
                         )}
                       </Button>
                       <Button
@@ -245,7 +248,7 @@ export default function EventDetail() {
                           setPhotoLinkValue('');
                         }}
                       >
-                        Annuler
+                        {t('cancel')}
                       </Button>
                     </div>
                   ) : (
@@ -258,7 +261,7 @@ export default function EventDetail() {
                         setPhotoLinkValue(event.photo_link || '');
                       }}
                     >
-                      {event.photo_link ? 'Modifier le lien photos' : 'Ajouter un lien photos'}
+                      {event.photo_link ? t('editPhotoLink') : t('addPhotoLink')}
                     </Button>
                   )}
                 </div>
@@ -271,7 +274,7 @@ export default function EventDetail() {
                   asChild
                 >
                   <a href={event.photo_link} target="_blank" rel="noopener noreferrer">
-                    Voir les photos
+                    {t('viewPhotos')}
                   </a>
                 </Button>
               )}

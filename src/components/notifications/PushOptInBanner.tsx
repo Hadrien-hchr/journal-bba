@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { initOneSignal, requestPushPermission, syncPlayerIdOnReady } from '@/lib/onesignal';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const DISMISS_KEY = 'bba_push_dismissed_at';
 
@@ -28,6 +29,7 @@ function detectEnv() {
 
 export function PushOptInBanner() {
   const { user } = useAuth();
+  const { t } = useTranslation('common');
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showIOSHelp, setShowIOSHelp] = useState(false);
@@ -70,7 +72,7 @@ export function PushOptInBanner() {
     }
 
     if (!env.supportsPush) {
-      toast.error("Ton navigateur ne supporte pas les notifications push.");
+      toast.error(t('push.unsupported'));
       return;
     }
 
@@ -87,16 +89,16 @@ export function PushOptInBanner() {
           .from('profiles')
           .update({ onesignal_player_id: playerId, push_enabled: true })
           .eq('id', user.id);
-        toast.success('Notifications activées 🔔');
+        toast.success(t('push.success'));
         setVisible(false);
       } else if ('Notification' in window && Notification.permission === 'denied') {
-        toast.error('Notifications bloquées par le navigateur. Active-les dans les réglages du site.');
+        toast.error(t('push.denied'));
       } else {
-        toast.error("Impossible d'activer les notifications. Réessaie depuis l'app installée.");
+        toast.error(t('push.failed'));
       }
     } catch (e) {
       console.error(e);
-      toast.error("Erreur lors de l'activation des notifications.");
+      toast.error(t('push.error'));
     } finally {
       clearTimeout(timeout);
       setLoading(false);
@@ -122,7 +124,7 @@ export function PushOptInBanner() {
           <button
             onClick={handleDismiss}
             className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
-            aria-label="Fermer"
+            aria-label={t('push.close')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -133,27 +135,27 @@ export function PushOptInBanner() {
                 <div className="rounded-xl gradient-red p-2 shadow-red">
                   <Bell className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <p className="font-semibold text-sm">Installe l'app pour recevoir les notifs</p>
+                <p className="font-semibold text-sm">{t('push.iosTitle')}</p>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Sur iPhone, les notifications ne fonctionnent qu'une fois Journal BBA ajouté à ton écran d'accueil :
+                {t('push.iosIntro')}
               </p>
               <ol className="text-xs space-y-2 text-foreground/90">
                 <li className="flex items-center gap-2">
                   <span className="font-semibold">1.</span>
-                  Appuie sur <Share className="inline h-4 w-4 mx-1 text-primary" /> dans la barre Safari
+                  {t('push.iosStep1a')} <Share className="inline h-4 w-4 mx-1 text-primary" /> {t('push.iosStep1b')}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="font-semibold">2.</span>
-                  Choisis <Plus className="inline h-4 w-4 mx-1 text-primary" /> « Sur l'écran d'accueil »
+                  {t('push.iosStep2a')} <Plus className="inline h-4 w-4 mx-1 text-primary" /> {t('push.iosStep2b')}
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="font-semibold">3.</span>
-                  Ouvre l'app depuis l'icône et reviens activer les notifs
+                  {t('push.iosStep3')}
                 </li>
               </ol>
               <Button size="sm" variant="ghost" className="mt-3" onClick={handleDismiss}>
-                J'ai compris
+                {t('push.gotIt')}
               </Button>
             </div>
           ) : (
@@ -162,18 +164,18 @@ export function PushOptInBanner() {
                 <Bell className="h-5 w-5 text-primary-foreground" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-sm">Ne rate plus rien !</p>
+                <p className="font-semibold text-sm">{t('push.title')}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {env.isIOS && !env.isStandalone
-                    ? "Sur iPhone, ajoute l'app à ton écran d'accueil pour recevoir les notifications."
-                    : "Active les notifications pour être alerté·e des nouveaux événements et interviews."}
+                    ? t('push.descIOS')
+                    : t('push.desc')}
                 </p>
                 <div className="flex gap-2 mt-3">
                   <Button size="sm" className="gradient-red shadow-red" onClick={handleEnable} disabled={loading}>
-                    {env.isIOS && !env.isStandalone ? "Voir comment" : loading ? "..." : "Activer"}
+                    {env.isIOS && !env.isStandalone ? t('push.seeHow') : loading ? '...' : t('push.enable')}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={handleDismiss}>
-                    Plus tard
+                    {t('push.later')}
                   </Button>
                 </div>
               </div>

@@ -4,14 +4,16 @@ import { Bell, LogOut, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import logoJ from '@/assets/logo-j.jpeg';
+import { useTranslation } from 'react-i18next';
 
 export default function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
 
   const handleSignOut = async () => {
     await signOut();
-    toast.success('Déconnexion réussie');
+    toast.success(t('header.signOutSuccess'));
     navigate('/auth');
   };
 
@@ -26,7 +28,7 @@ export default function Header() {
           {isAdmin && (
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
               <Shield className="h-2.5 w-2.5" />
-              Admin
+              {t('admin')}
             </div>
           )}
         </div>
@@ -40,7 +42,7 @@ export default function Header() {
                   size="icon"
                   onClick={() => navigate('/admin/notifications')}
                   className="text-muted-foreground hover:text-primary h-9 w-9 rounded-xl"
-                  title="Gestion des notifications"
+                  title={t('header.notifications')}
                 >
                   <Bell className="h-4 w-4" />
                 </Button>
@@ -49,6 +51,7 @@ export default function Header() {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate('/account')}
+                title={t('header.account')}
                 className="text-muted-foreground hover:text-foreground h-9 w-9 rounded-xl"
               >
                 <User className="h-4 w-4" />
@@ -57,6 +60,7 @@ export default function Header() {
                 variant="ghost"
                 size="icon"
                 onClick={handleSignOut}
+                title={t('header.signOut')}
                 className="text-muted-foreground hover:text-foreground h-9 w-9 rounded-xl"
               >
                 <LogOut className="h-4 w-4" />

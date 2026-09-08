@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/hooks/useLanguage';
 import { 
   useProfile, 
   useUpdateProfile, 
@@ -15,8 +17,7 @@ import {
 } from '@/hooks/useFriends';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -29,14 +30,18 @@ import {
   X, 
   Loader2,
   Users,
-  Mail
+  Mail,
+  Languages
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 export default function Account() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation('account');
+  const { language, setLanguage, languages } = useLanguage();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: friends, isLoading: friendsLoading } = useFriends();
   const { data: requests, isLoading: requestsLoading } = useFriendRequests();
@@ -53,10 +58,10 @@ export default function Account() {
   const [isUploading, setIsUploading] = useState(false);
 
   const getDisplayName = (p: Profile | null | undefined) => {
-    if (!p) return 'Utilisateur';
+    if (!p) return t('defaultUser');
     if (p.first_name && p.last_name) return `${p.first_name} ${p.last_name}`;
     if (p.full_name) return p.full_name;
-    return p.email?.split('@')[0] || 'Utilisateur';
+    return p.email?.split('@')[0] || t('defaultUser');
   };
 
   const getInitials = (p: Profile | null | undefined) => {
@@ -95,10 +100,10 @@ export default function Account() {
         .getPublicUrl(filePath);
 
       await updateProfile.mutateAsync({ avatar_url: publicUrl });
-      toast.success('Photo de profil mise à jour');
+      toast.success(t('avatarUpdateSuccess'));
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Erreur lors du téléchargement');
+      toast.error(t('avatarUpdateError'));
     } finally {
       setIsUploading(false);
     }
@@ -123,7 +128,7 @@ export default function Account() {
       
       setSearchResults(filtered);
     } catch (error) {
-      toast.error('Erreur lors de la recherche');
+      toast.error(t('friends.searchError'));
     }
   };
 
@@ -131,36 +136,36 @@ export default function Account() {
     try {
       await sendRequest.mutateAsync(toUserId);
       setSearchResults(prev => prev.filter(p => p.id !== toUserId));
-      toast.success('Demande d\'ami envoyée');
+      toast.success(t('friends.sendRequestSuccess'));
     } catch (error) {
-      toast.error('Erreur lors de l\'envoi de la demande');
+      toast.error(t('friends.sendRequestError'));
     }
   };
 
   const handleAcceptRequest = async (request: typeof requests extends { incoming: infer T } ? T extends (infer U)[] ? U : never : never) => {
     try {
       await acceptRequest.mutateAsync(request);
-      toast.success('Demande acceptée');
+      toast.success(t('requests.acceptSuccess'));
     } catch (error) {
-      toast.error('Erreur lors de l\'acceptation');
+      toast.error(t('requests.acceptError'));
     }
   };
 
   const handleRejectRequest = async (requestId: string) => {
     try {
       await rejectRequest.mutateAsync(requestId);
-      toast.success('Demande refusée');
+      toast.success(t('requests.rejectSuccess'));
     } catch (error) {
-      toast.error('Erreur lors du refus');
+      toast.error(t('requests.rejectError'));
     }
   };
 
   const handleRemoveFriend = async (friendId: string) => {
     try {
       await removeFriend.mutateAsync(friendId);
-      toast.success('Ami supprimé');
+      toast.success(t('friends.removeSuccess'));
     } catch (error) {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('friends.removeError'));
     }
   };
 
@@ -180,7 +185,7 @@ export default function Account() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-display font-bold ml-2">Mon Compte</h1>
+          <h1 className="text-xl font-display font-bold ml-2">{t('title')}</h1>
         </div>
       </header>
 
@@ -220,16 +225,41 @@ export default function Account() {
           </CardContent>
         </Card>
 
+        {/* Language Selector */}
+        <Card className="shadow-soft">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Languages className="h-4 w-4" />
+              {t('language.title')}
+            </CardTitle>
+            <CardDescription>{t('language.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2">
+              {languages.map((lang) => (
+                <Button
+                  key={lang}
+                  variant={language === lang ? 'default' : 'outline'}
+                  onClick={() => setLanguage(lang)}
+                  className={cn(language === lang && 'gradient-red shadow-red')}
+                >
+                  {t(`language.${lang}`)}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Tabs */}
         <Tabs defaultValue="friends" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="friends" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Amis ({friends?.length || 0})
+              {t('tabs.friends', { count: friends?.length || 0 })}
             </TabsTrigger>
             <TabsTrigger value="requests" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
-              Demandes ({requests?.incoming.length || 0})
+              {t('tabs.requests', { count: requests?.incoming.length || 0 })}
             </TabsTrigger>
           </TabsList>
 
@@ -237,12 +267,12 @@ export default function Account() {
             {/* Search */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Ajouter un ami</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('friends.addFriend')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Rechercher par nom ou email..."
+                    placeholder={t('friends.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -330,10 +360,10 @@ export default function Account() {
                 <CardContent className="flex flex-col items-center justify-center py-8 text-center">
                   <Users className="h-10 w-10 text-muted-foreground mb-3" />
                   <p className="text-muted-foreground text-sm">
-                    Vous n'avez pas encore d'amis
+                    {t('friends.empty')}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Recherchez des utilisateurs pour les ajouter
+                    {t('friends.emptyHint')}
                   </p>
                 </CardContent>
               </Card>
@@ -351,7 +381,7 @@ export default function Account() {
                 {requests?.incoming && requests.incoming.length > 0 && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-medium text-muted-foreground">
-                      Demandes reçues
+                      {t('requests.incoming')}
                     </h3>
                     {requests.incoming.map((request) => (
                       <Card key={request.id} className="shadow-soft">
@@ -365,7 +395,7 @@ export default function Account() {
                               <div>
                                 <p className="font-medium">{getDisplayName(request.from_user)}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  Souhaite vous ajouter
+                                  {t('requests.wantsToAdd')}
                                 </p>
                               </div>
                             </div>
@@ -398,7 +428,7 @@ export default function Account() {
                 {requests?.outgoing && requests.outgoing.length > 0 && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-medium text-muted-foreground">
-                      Demandes envoyées
+                      {t('requests.outgoing')}
                     </h3>
                     {requests.outgoing.map((request) => (
                       <Card key={request.id} className="shadow-soft border-dashed">
@@ -411,7 +441,7 @@ export default function Account() {
                             <div>
                               <p className="font-medium">{getDisplayName(request.to_user)}</p>
                               <p className="text-xs text-muted-foreground">
-                                En attente de réponse...
+                                {t('requests.pending')}
                               </p>
                             </div>
                           </div>
@@ -427,7 +457,7 @@ export default function Account() {
                     <CardContent className="flex flex-col items-center justify-center py-8 text-center">
                       <Mail className="h-10 w-10 text-muted-foreground mb-3" />
                       <p className="text-muted-foreground text-sm">
-                        Aucune demande en attente
+                        {t('requests.empty')}
                       </p>
                     </CardContent>
                   </Card>

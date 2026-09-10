@@ -166,23 +166,32 @@ export function useFriendRequests() {
   });
 }
 
-export function useSearchProfiles() {
+export interface PublicProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+/**
+ * Search (or, with an empty term, get suggestions of) students to add as friends.
+ * Uses a security-definer RPC that only exposes public fields (no emails).
+ */
+export function useProfileSuggestions(searchTerm: string) {
   const { user } = useAuth();
 
-  return useMutation({
-    mutationFn: async (searchTerm: string) => {
-      if (!user || !searchTerm.trim()) return [];
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', user.id)
-        .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
-        .limit(20);
-
+  return useQuery({
+    queryKey: ['profile-suggestions', user?.id, searchTerm.trim().toLowerCase()],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('search_or_suggest_profiles', {
+        search_term: searchTerm.trim(),
+        max_results: 20,
+      });
       if (error) throw error;
-      return data as Profile[];
+      return (data || []) as PublicProfile[];
     },
+    enabled: !!user,
+    staleTime: 15_000,
   });
 }
 
@@ -193,54 +202,36 @@ export function useSendFriendRequest() {
   return useMutation({
     mutationFn: async (toUserId: string) => {
       if (!user) throw new Error('Not authenticated');
-      
-      const { data, error } = await supabase
-        .from('friend_requests')
-        .insert({
-          from_user_id: user.id,
-          to_user_id: toUserId,
-        })
-        .select()
-        .single();
+
+      const { data, error } = await supabase.rpc('send_friend_request', {
+        target_user: toUserId,
+      });
 
       if (error) throw error;
-      return data;
+      return data as string; // 'pending' | 'friends'
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-suggestions'] });
     },
   });
 }
 
 export function useAcceptFriendRequest() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (request: FriendRequest) => {
-      if (!user) throw new Error('Not authenticated');
-
-      // Update request status
-      const { error: updateError } = await supabase
-        .from('friend_requests')
-        .update({ status: 'accepted' })
-        .eq('id', request.id);
-
-      if (updateError) throw updateError;
-
-      // Create friendship (both directions)
-      const { error: friendError } = await supabase
-        .from('friendships')
-        .insert([
-          { user_id: request.from_user_id, friend_id: request.to_user_id },
-          { user_id: request.to_user_id, friend_id: request.from_user_id },
-        ]);
-
-      if (friendError) throw friendError;
+      const { error } = await supabase.rpc('accept_friend_request', {
+        request_id: request.id,
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-suggestions'] });
     },
   });
 }
@@ -250,37 +241,29 @@ export function useRejectFriendRequest() {
 
   return useMutation({
     mutationFn: async (requestId: string) => {
-      const { error } = await supabase
-        .from('friend_requests')
-        .update({ status: 'rejected' })
-        .eq('id', requestId);
-
+      const { error } = await supabase.rpc('reject_friend_request', {
+        request_id: requestId,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-suggestions'] });
     },
   });
 }
 
 export function useRemoveFriend() {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (friendId: string) => {
-      if (!user) throw new Error('Not authenticated');
-
-      // Delete both friendship records
-      const { error } = await supabase
-        .from('friendships')
-        .delete()
-        .or(`and(user_id.eq.${user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`);
-
+      const { error } = await supabase.rpc('remove_friend', { friend: friendId });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['profile-suggestions'] });
     },
   });
 }

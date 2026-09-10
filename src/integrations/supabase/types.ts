@@ -89,6 +89,38 @@ export type Database = {
         }
         Relationships: []
       }
+      event_friend_milestones: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          milestone: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          milestone: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          milestone?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_friend_milestones_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           association_id: string | null
@@ -425,6 +457,47 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -588,6 +661,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_friend_request: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -595,6 +672,23 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_friendship: { Args: { a: string; b: string }; Returns: undefined }
+      norm_text: { Args: { t: string }; Returns: string }
+      reject_friend_request: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
+      remove_friend: { Args: { friend: string }; Returns: undefined }
+      search_or_suggest_profiles: {
+        Args: { max_results?: number; search_term?: string }
+        Returns: {
+          avatar_url: string
+          first_name: string
+          id: string
+          last_name: string
+        }[]
+      }
+      send_friend_request: { Args: { target_user: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"

@@ -8,6 +8,13 @@
       "when": 1788781706203,
       "tag": "0000_add_profile_language",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789023550135,
+      "tag": "0001_friends_search_rpc_and_event_milestones",
+      "breakpoints": true
     }
   ]
 }
